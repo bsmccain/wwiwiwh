@@ -6,6 +6,13 @@ const DRAG_SLOP_PX = 3;
 /** The bit of a pointer event's `buttons` that says the left mouse button is down. */
 const LEFT_HELD = 1;
 
+/**
+ * Sent from the handle, bubbling, when a press on it is taken as a drag, and again exactly once when
+ * that drag ends, however it ends. Lets the page hold back what it would say while the drag lasts.
+ */
+export const DRAG_START_EVENT = 'wwiwiwh-dragstart';
+export const DRAG_END_EVENT = 'wwiwiwh-dragend';
+
 export interface DragOptions {
   /** The slop for a mouse, where a handle that is also clicked needs more of it than one that is only dragged. */
   readonly mouseSlopPx?: number;
@@ -92,8 +99,12 @@ export function bindDrag<Grab>(
       handle.classList.remove('is-held');
       if (handle.hasPointerCapture(pointerId)) handle.releasePointerCapture(pointerId);
     } finally {
-      // Last, with the drag already over: whatever this throws, nothing is left held.
-      handlers.end?.(grab, { moved, cancelled });
+      try {
+        // Last, with the drag already over: whatever this throws, nothing is left held.
+        handlers.end?.(grab, { moved, cancelled });
+      } finally {
+        handle.dispatchEvent(new Event(DRAG_END_EVENT, { bubbles: true }));
+      }
     }
   };
 
@@ -160,6 +171,7 @@ export function bindDrag<Grab>(
     const slop = event.pointerType === 'mouse' ? mouseSlopPx : touchSlopPx;
     active = { pointerId: event.pointerId, pointerType: event.pointerType, origin, from, slop, grab, watch, moved: false };
     handle.classList.add('is-held');
+    handle.dispatchEvent(new Event(DRAG_START_EVENT, { bubbles: true }));
     try {
       // Capture keeps the moves coming when the pointer leaves the window, and keeps other controls
       // from reacting to a pointer that is only passing over them.
