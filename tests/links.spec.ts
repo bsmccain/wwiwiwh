@@ -20,6 +20,17 @@ test.describe('opening a link', () => {
     await expect(app.toast).toHaveCount(0);
   });
 
+  test('restores a pin and a view in the far north, between 85 degrees and the edge of the map', async ({ app }) => {
+    await app.open('home=san-jose&away=london&pin=37.4419,-122.143~85.02,20.5&view=85.02,20.5,16&trip=none');
+
+    const state = await app.state();
+    expect(state.reg.baseAnchor).toEqual({ lat: 85.02, lng: 20.5 });
+    expect(state.camera.zoom).toBeCloseTo(16, 5);
+    expect(distanceMeters(state.camera.center, { lat: 85.02, lng: 20.5 })).toBeLessThan(1);
+    await expect(app.toast).toHaveCount(0);
+    expect(await app.hash()).toContain('pin=37.4419,-122.143~85.02,20.5');
+  });
+
   test('a link that names a place that cannot be understood opens the default pair and says so', async ({ app }) => {
     await app.open('home=atlantis&away=london&turn=sideways');
 

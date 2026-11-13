@@ -1,4 +1,5 @@
 import { defaultTripFor } from '../data/trips';
+import { clamp, MAX_MERCATOR_LAT } from '../geo/mercator';
 import { normalizeDegrees, overlayToBase } from '../geo/registration';
 import type { LngLat } from '../geo/types';
 import { centeredRegistration, defaultLinkState, presetPlace } from './defaults';
@@ -23,6 +24,8 @@ import type { LinkState, Place, Trip, View } from './types';
  */
 
 const COORD_DIGITS = 5;
+/** The map's own latitude limit as `point` writes it: rounding may carry it a hair past the limit. */
+const MAX_LINK_LAT = Number(MAX_MERCATOR_LAT.toFixed(COORD_DIGITS));
 
 function num(value: number, digits: number): string {
   return String(Number(value.toFixed(digits)));
@@ -102,8 +105,8 @@ function parsePoint(text: string | undefined): LngLat | null {
   if (rest.length > 0) return null;
   const lat = parseNumber(latText);
   const lng = parseNumber(lngText);
-  if (lat === null || lng === null || Math.abs(lat) > 85 || Math.abs(lng) > 180) return null;
-  return { lat, lng };
+  if (lat === null || lng === null || Math.abs(lat) > MAX_LINK_LAT || Math.abs(lng) > 180) return null;
+  return { lat: clamp(lat, -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT), lng };
 }
 
 function parsePointPair(text: string): [LngLat, LngLat] | null {
