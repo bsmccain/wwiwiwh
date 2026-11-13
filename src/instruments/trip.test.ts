@@ -24,6 +24,20 @@ describe('moveTripEnd', () => {
     expect(end.fromName).toBe('Palo Alto');
   });
 
+  it('keeps the Away landing of the end that did not move, and drops the moved end\'s', () => {
+    const heathrow = { name: 'Heathrow Airport', at: { lat: 51.47, lng: -0.4543 } };
+    const pier = { name: 'Brighton Pier', at: { lat: 50.8169, lng: -0.1367 } };
+    const landed: Trip = { ...named, fromLanding: pier, toLanding: heathrow };
+
+    const start = moveTripEnd(landed, 'from', ELSEWHERE);
+    expect('fromName' in start || 'fromLanding' in start).toBe(false);
+    expect(start).toMatchObject({ toName: 'San Jose', toLanding: heathrow });
+
+    const end = moveTripEnd(landed, 'to', ELSEWHERE);
+    expect('toName' in end || 'toLanding' in end).toBe(false);
+    expect(end).toMatchObject({ fromName: 'Palo Alto', fromLanding: pier });
+  });
+
   it('adds no name keys to a trip that had none', () => {
     const moved = moveTripEnd({ from: PALO_ALTO, to: SAN_JOSE }, 'to', ELSEWHERE);
     expect(Object.keys(moved).sort()).toEqual(['from', 'to']);
