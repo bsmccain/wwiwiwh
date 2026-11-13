@@ -35,6 +35,8 @@ export function runCommand(command: KeyCommand, targets: CommandTargets): void {
       return controller.toggleSlide();
     case 'toggleMeasure':
       return controller.toggleMeasure();
+    case 'toggleDrive':
+      return controller.toggleDrive();
     case 'placeTripEnd':
       return targets.instruments.placeTripEndAtCenter();
     case 'toggleRings':

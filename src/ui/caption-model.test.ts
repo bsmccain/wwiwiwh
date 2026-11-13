@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Span } from '../app/readout';
-import { CAPTION_COPY, captionFor, type CaptionInput } from './caption-model';
+import { CAPTION_COPY, captionFor, type CaptionInput, type DriveCaption } from './caption-model';
 
 const trip: Span[] = [{ text: 'Palo Alto to San Jose', ink: 'home' }, { text: ' is 16.7 mi.' }];
 const pin: Span[] = [{ text: 'Downtown San Jose', ink: 'home' }, { text: ' sits on ' }, { text: 'central London', ink: 'away' }];
@@ -11,6 +11,9 @@ const wide: CaptionInput = {
   slidSinceModeOn: false,
   drift: null,
   trip,
+  driveOn: { sheet: 'home', place: 'San Jose' },
+  driveStarted: false,
+  drive: null,
   pin,
   turned: false,
   collarIsFull: true,
@@ -40,9 +43,9 @@ describe('caption priority', () => {
     expect(captionFor({ ...wide, drift: zoomedOut }).kind).toBe('scale');
   });
 
-  it('describes the trip and offers to clear it', () => {
+  it('describes the trip and offers to drive it or clear it', () => {
     expect(captionFor(wide).spans).toBe(trip);
-    expect(actions(wide)).toEqual(['clear-trip']);
+    expect(actions(wide)).toEqual(['drive-trip', 'clear-trip']);
   });
 
   it('without a trip, says where the pin is unless the collar already does', () => {
@@ -155,5 +158,81 @@ describe('scale warning', () => {
     const input: CaptionInput = { ...wide, drift: farFromPin };
     expect(text(input)).toBe('The two maps match at the pin. This far from it they differ by about 5%.');
     expect(actions(input)).toEqual(['pin-here']);
+  });
+});
+
+describe('setting a drive', () => {
+  const driving: CaptionInput = { ...wide, mode: 'drive' };
+  const pressed = (input: CaptionInput, action: string): boolean | undefined =>
+    captionFor(input).buttons.find((button) => button.action === action)?.pressed;
+
+  it('is loud, and comes before a warning about scale as the other modes do', () => {
+    const caption = captionFor({ ...driving, drift: zoomedOut });
+    expect(caption.kind).toBe('driving');
+    expect(caption.tone).toBe('loud');
+  });
+
+  it('asks for the start and then the end, naming the place the drive is on in its ink', () => {
+    expect(text(driving)).toBe('Click where the drive starts in San Jose.');
+    expect(text({ ...driving, driveStarted: true })).toBe('Now click where it ends in San Jose.');
+    expect(text({ ...driving, input: 'touch' })).toBe('Tap where the drive starts in San Jose.');
+    expect(text({ ...driving, input: 'touch', driveStarted: true })).toBe('Now tap where it ends in San Jose.');
+    const onAway: CaptionInput = { ...driving, driveOn: { sheet: 'away', place: 'London' } };
+    expect(text(onAway)).toBe('Click where the drive starts in London.');
+    expect(captionFor(driving).spans.find((span) => span.ink)).toEqual({ text: 'San Jose', ink: 'home' });
+    expect(captionFor(onAway).spans.find((span) => span.ink)).toEqual({ text: 'London', ink: 'away' });
+  });
+
+  it('tells keyboard users about Enter and the centre mark', () => {
+    expect(text({ ...driving, input: 'keyboard' })).toBe('Press Enter to set where the drive starts in San Jose, at the centre mark.');
+    expect(text({ ...driving, input: 'keyboard', driveStarted: true })).toBe(CAPTION_COPY.driveKeysEnd);
+  });
+
+  it('offers the other place, an address, and the way out', () => {
+    expect(actions(driving)).toEqual(['drive-on-away', 'to-address', 'cancel']);
+    expect(pressed(driving, 'drive-on-away')).toBe(false);
+    expect(pressed({ ...driving, driveOn: { sheet: 'away', place: 'London' } }, 'drive-on-away')).toBe(true);
+  });
+
+  it('settles the place with the start: the switch then only shows which it is', () => {
+    const started = captionFor({ ...driving, driveStarted: true, driveOn: { sheet: 'away', place: 'London' } });
+    expect(started.buttons[0]).toEqual({ action: 'drive-on-away', disabled: true, pressed: true });
+  });
+});
+
+describe('a drive on the map', () => {
+  const spans: Span[] = [{ text: 'Palo Alto to San Jose', ink: 'home' }, { text: ' is 17.4 mi by road.' }];
+  const routed: DriveCaption = { spans, routed: true, byDistance: false, retry: false };
+  const driven = (drive: Partial<DriveCaption> = {}): CaptionInput => ({ ...wide, trip: null, drive: { ...routed, ...drive } });
+
+  it('is described quietly, in place of a trip and before the pin', () => {
+    const caption = captionFor({ ...phone, trip, drive: routed });
+    expect(caption.kind).toBe('drive');
+    expect(caption.tone).toBe('quiet');
+    expect(caption.spans).toBe(spans);
+    expect(caption.pinSentence).toBe(false);
+  });
+
+  it('gives way to a mode and to a warning about scale', () => {
+    expect(captionFor({ ...driven(), mode: 'slide' }).kind).toBe('slide');
+    expect(captionFor({ ...driven(), mode: 'drive' }).kind).toBe('driving');
+    expect(captionFor({ ...driven(), drift: zoomedOut }).kind).toBe('scale');
+  });
+
+  it('offers to match the distance in place of the time once there is a route, and to clear the drive', () => {
+    expect(captionFor(driven()).buttons).toEqual([
+      { action: 'same-distance', disabled: false, pressed: false },
+      { action: 'clear-drive', disabled: false },
+    ]);
+    expect(captionFor(driven({ byDistance: true })).buttons[0]).toEqual({ action: 'same-distance', disabled: false, pressed: true });
+  });
+
+  it('has nothing to match while there is no route', () => {
+    expect(actions(driven({ routed: false }))).toEqual(['clear-drive']);
+  });
+
+  it('offers to ask again when the road service failed, about the drive or about its reach', () => {
+    expect(actions(driven({ routed: false, retry: true }))).toEqual(['retry-drive', 'clear-drive']);
+    expect(actions(driven({ retry: true }))).toEqual(['same-distance', 'retry-drive', 'clear-drive']);
   });
 });

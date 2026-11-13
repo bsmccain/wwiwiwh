@@ -61,6 +61,11 @@ describe('classifyMapError', () => {
     expect(classifyMapError({ error: { message: 'Worker failed to load. Check that the worker URL is correct.' } })).toBe('worker');
   });
 
+  it('leaves errors of a sheet’s own drawing alone: only the tile service is loaded from', () => {
+    expect(classifyMapError({ error: { message: 'Input data is not a valid GeoJSON object.' }, sourceId: 'drive-reach' })).toBeNull();
+    expect(classifyMapError({ error: { message: 'worker error' }, tile: {}, sourceId: 'drive-route' })).toBeNull();
+  });
+
   it('leaves errors that are not about loading alone', () => {
     expect(classifyMapError({ error: { message: 'Layer "x" already exists on this map.' } })).toBeNull();
     expect(classifyMapError({ error: null })).toBeNull();

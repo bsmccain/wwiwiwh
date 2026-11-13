@@ -1,4 +1,4 @@
-import type { MapHealth, Sheet } from './contracts';
+import { SOURCE_ID, type MapHealth, type Sheet } from './contracts';
 
 /**
  * What can be wrong with a sheet:
@@ -22,6 +22,9 @@ export interface MapErrorLike {
 
 /** Which trouble an error event from either map tells of, or null when it is not about loading at all. */
 export function classifyMapError(event: MapErrorLike): Trouble | null {
+  // A sheet's own drawing (a drive's road, its reach) is data handed to the map, not something
+  // loaded: an error there is no trouble with the tile service, and retrying its tiles mends nothing.
+  if (typeof event.sourceId === 'string' && event.sourceId !== SOURCE_ID) return null;
   if (event.tile != null) return 'tiles';
   if (typeof event.sourceId === 'string') return 'source';
   if (/^Worker failed to load/.test(event.error?.message ?? '')) return 'worker';

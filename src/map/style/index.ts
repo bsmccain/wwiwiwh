@@ -1,6 +1,7 @@
 import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import { SOURCE_ID, type StyleFactory } from '../contracts';
 import { awayLayers } from './away';
+import { drawingLayers } from './drawing';
 import { homeLayers } from './home';
 import { registerRouteImages } from './images';
 import { paletteFor } from './palette';
@@ -30,12 +31,11 @@ function sheetStyle(name: string, layers: LayerSpecification[]): StyleSpecificat
  */
 export const createStyles: StyleFactory = (theme) => {
   const palette = paletteFor(theme);
+  const stepped = (zoomOffset: number): number => Math.round(zoomOffset / ZOOM_OFFSET_STEP) * ZOOM_OFFSET_STEP;
   return {
     base: sheetStyle(`wwiwiwh away, ${theme}`, awayLayers(palette, theme)),
-    overlay: (zoomOffset) => {
-      const offset = Math.round(zoomOffset / ZOOM_OFFSET_STEP) * ZOOM_OFFSET_STEP;
-      return sheetStyle(`wwiwiwh home, ${theme}`, homeLayers(palette, theme, offset));
-    },
+    overlay: (zoomOffset) => sheetStyle(`wwiwiwh home, ${theme}`, homeLayers(palette, theme, stepped(zoomOffset))),
+    drawing: (sheet, zoomOffset) => drawingLayers(theme, sheet, sheet === 'home' ? stepped(zoomOffset) : 0),
     prepare: (map, sheet) => registerRouteImages(map, sheet, theme),
   };
 };

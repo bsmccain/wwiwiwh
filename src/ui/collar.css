@@ -2,7 +2,7 @@
  * The collar: the margin of the printed sheet. Opaque sheet colour, separated from the map by a
  * neatline (a 2px key rule with a 1px rule 3px below it). Three arrangements:
  *
- *   under 900px     two rows of large targets: the two place chips with Swap between them, then six
+ *   under 900px     two rows of large targets: the two place chips with Swap between them, then seven
  *                   tools. The bar scale and the credit move onto the map, the pin sentence into the
  *                   caption, and slide mode puts its own buttons in place of the tools. Screens no
  *                   taller than 500px get this arrangement too, however wide (a phone on its side, a
@@ -20,7 +20,7 @@
 .collar {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
   padding: 9px max(var(--space-2), env(safe-area-inset-right)) calc(3px + env(safe-area-inset-bottom))
     max(var(--space-2), env(safe-area-inset-left));
@@ -192,14 +192,14 @@
 /* --- tools, and on narrow screens Copy link and More beside them as two more of the same --- */
 
 .tools {
-  grid-column: 1 / span 4;
+  grid-column: 1 / span 5;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2px;
 }
 
 .share {
-  grid-column: 5 / span 2;
+  grid-column: 6 / span 2;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2px;
@@ -238,13 +238,22 @@
 }
 
 /*
- * On the narrowest phones a two-word name does not fit on one line in a sixth of the width. There
- * every two-word name takes two lines, so the row does not mix names that fit with names that wrap.
+ * On phones a two-word name does not fit on one line in a seventh of the width. There every
+ * two-word name takes two lines, so the row does not mix names that fit with names that wrap.
  */
-@media (max-width: 429.98px) {
+@media (max-width: 479.98px) {
   .tool__word,
   .share__copy-short {
     max-inline-size: min-content;
+  }
+}
+
+/* Seven 48px targets need the whole width of the smallest phones, so there the gaps between them go. */
+@media (max-width: 374.98px) {
+  .collar,
+  .tools,
+  .share {
+    column-gap: 0;
   }
 }
 

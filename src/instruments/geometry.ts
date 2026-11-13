@@ -198,6 +198,82 @@ export function ringLabelSpot(pin: ScreenPoint, radius: number, size: StageSize,
   return null;
 }
 
+// --- a ring that may be far larger than the stage ---
+
+/** A stretch of a ring, in degrees clockwise from straight up: 0 <= from < to <= 360. */
+export interface RingArc {
+  readonly from: number;
+  readonly to: number;
+}
+
+function isInBox(point: ScreenPoint, box: ScreenBox): boolean {
+  return point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height;
+}
+
+/**
+ * The stretches of a ring that lie inside a box, in order round the ring from straight up. A ring
+ * about a spot far off stage shows as a sliver of arc, and one many stages across as a few of them;
+ * these are worked out exactly, from where the ring crosses the box's sides, so that a ring of any
+ * size can be drawn and lettered from the part of it that shows. A stretch never runs across
+ * straight up: the one through there comes as two, which is where a drawn ring has its seam.
+ */
+export function ringArcsInside(center: ScreenPoint, radius: number, box: ScreenBox): RingArc[] {
+  if (!(radius > 0)) return [];
+  const cuts = [0];
+  const cut = (degrees: number): void => {
+    cuts.push(((degrees % 360) + 360) % 360);
+  };
+  for (const x of [box.x, box.x + box.width]) {
+    const sine = (x - center.x) / radius;
+    if (Math.abs(sine) > 1) continue;
+    const degrees = Math.asin(sine) / DEG;
+    cut(degrees);
+    cut(180 - degrees);
+  }
+  for (const y of [box.y, box.y + box.height]) {
+    const cosine = (center.y - y) / radius;
+    if (Math.abs(cosine) > 1) continue;
+    const degrees = Math.acos(cosine) / DEG;
+    cut(degrees);
+    cut(-degrees);
+  }
+  cuts.sort((a, b) => a - b);
+
+  const arcs: RingArc[] = [];
+  cuts.forEach((from, index) => {
+    const to = cuts[index + 1] ?? 360;
+    // Between two crossings the ring is wholly inside or wholly outside: its middle says which.
+    if (to <= from || !isInBox(pointAtAngle(center, radius, (from + to) / 2), box)) return;
+    const last = arcs[arcs.length - 1];
+    // A cut that the ring only touches the box at, or one on a side it crosses outside the box, parts nothing.
+    if (last && last.to === from) arcs[arcs.length - 1] = { from: last.from, to };
+    else arcs.push({ from, to });
+  });
+  return arcs;
+}
+
+/** The angle on any of the stretches that is nearest to `degrees` round the ring. Null when there are none. */
+export function nearestOnArcs(arcs: readonly RingArc[], degrees: number): number | null {
+  const wanted = ((degrees % 360) + 360) % 360;
+  let nearest: number | null = null;
+  let least = Infinity;
+  for (const arc of arcs) {
+    if (wanted >= arc.from && wanted <= arc.to) return wanted;
+    for (const end of [arc.from, arc.to]) {
+      const apart = Math.abs(normalizeDegrees(end - wanted));
+      if (apart < least) {
+        least = apart;
+        nearest = end;
+      }
+    }
+  }
+  return nearest;
+}
+
+export function boxesOverlap(a: ScreenBox, b: ScreenBox): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+
 // --- the chip that points at an off-stage pin ---
 
 export interface EdgeChipSpot {

@@ -19,6 +19,8 @@ const dot = (cx: number, cy: number, r: number): Shape => circle(cx, cy, r, { cl
 const ICONS = {
   slide: [path('M12 3v18M3 12h18M12 3 9 6M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3')],
   measure: [path('M5.6 18.4 18.4 5.6M9.5 11.5l3 3'), circle(4, 20, 2.2), circle(20, 4, 2.2)],
+  // The same two ends as Measure, joined the way a road joins them.
+  drive: [path('M4.9 17.9C6.5 7.5 17.5 16.5 19.1 6.1'), circle(4, 20, 2.2), circle(20, 4, 2.2)],
   rings: [circle(12, 12, 9.5, { 'stroke-dasharray': '1.5 3' }), circle(12, 12, 5.5, { 'stroke-dasharray': '1.5 3' }), dot(12, 12, 1)],
   hide: [path('M4 5h16v9l-6 6H4zM20 14h-6v6')],
   link: [

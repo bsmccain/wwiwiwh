@@ -5,7 +5,7 @@ import { button, el } from './dom';
 import { HIDE_HOME_AT_REST, hideHomeReducer, homeIsHidden, type HideHomeEvent, type HideHomeState } from './hide-home';
 import { icon, type IconName } from './icons';
 
-export type ToolName = 'slide' | 'measure' | 'rings' | 'hide';
+export type ToolName = 'slide' | 'measure' | 'drive' | 'rings' | 'hide';
 
 export interface Tools {
   readonly element: HTMLElement;
@@ -20,17 +20,18 @@ export function createToolButton(name: IconName, word: string, className = '', t
 }
 
 /**
- * The map tools: Slide Home, Measure, Rings and Hide Home, each a toggle that is reversed while on.
+ * The map tools: Slide Home, Measure, Drive, Rings and Hide Home, each a toggle that is reversed while on.
  */
 export function createTools(deps: {
   store: Store<AppState>;
-  actions: Pick<Controller, 'toggleSlide' | 'toggleMeasure' | 'toggleRings' | 'setHomeHidden'>;
+  actions: Pick<Controller, 'toggleSlide' | 'toggleMeasure' | 'toggleDrive' | 'toggleRings' | 'setHomeHidden'>;
   disabled: boolean;
 }): Tools {
   const { store, actions } = deps;
   const tools: Readonly<Record<ToolName, HTMLButtonElement>> = {
     slide: createToolButton('slide', 'Slide Home', 'tool--home'),
     measure: createToolButton('measure', 'Measure'),
+    drive: createToolButton('drive', 'Drive'),
     rings: createToolButton('rings', 'Rings'),
     hide: createToolButton('hide', 'Hide Home', 'tool--home'),
   };
@@ -102,12 +103,14 @@ export function createTools(deps: {
 
   tools.slide.addEventListener('click', () => actions.toggleSlide());
   tools.measure.addEventListener('click', () => actions.toggleMeasure());
+  tools.drive.addEventListener('click', () => actions.toggleDrive());
   tools.rings.addEventListener('click', () => actions.toggleRings());
 
   const draw = (): void => {
     const { mode, rings } = store.get();
     press('slide', mode === 'slide');
     press('measure', mode === 'measure');
+    press('drive', mode === 'drive');
     press('rings', rings);
   };
   store.subscribe((state, previous) => {

@@ -37,10 +37,16 @@ const BUTTONS: readonly ButtonSpec[] = [
   { action: 'slide-right', word: 'Slide Home right', icon: 'nudgeRight', iconOnly: true, repeats: true },
   { action: 'square-up', word: 'Square up', icon: 'squareUp' },
   { action: 'done', word: 'Done' },
+  // In the order the model lists them, which is the order they stand and are tabbed through in.
+  { action: 'drive-on-away', word: 'On Away' },
   { action: 'to-address', word: 'To an address', opensPicker: true },
   { action: 'cancel', word: 'Cancel' },
+  { action: 'drive-trip', word: 'By road' },
   { action: 'clear-trip', word: 'Clear line' },
   { action: 'pin-here', word: 'Pin here' },
+  { action: 'same-distance', word: 'Same distance' },
+  { action: 'retry-drive', word: 'Try again' },
+  { action: 'clear-drive', word: 'Clear drive' },
 ];
 
 function createButton(spec: ButtonSpec): HTMLButtonElement {
@@ -89,6 +95,9 @@ export function createCaptionStrip(options: {
         const wanted = caption.buttons.find((candidate) => candidate.action === action);
         control.hidden = !wanted;
         control.disabled = wanted?.disabled ?? false;
+        // A switch says whether it is on; a button that simply acts says nothing of the kind.
+        if (wanted?.pressed === undefined) control.removeAttribute('aria-pressed');
+        else control.setAttribute('aria-pressed', String(wanted.pressed));
       }
       actions.hidden = caption.buttons.length === 0;
     },

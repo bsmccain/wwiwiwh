@@ -4,6 +4,7 @@ import {
   METERS_PER_MILE,
   defaultUnits,
   formatDistance,
+  formatDuration,
   formatFigure,
   formatRoundDistance,
   longestRoundDistance,
@@ -164,5 +165,26 @@ describe('planRings', () => {
     expect(planRings(50, 0, 'mi')).toEqual([]);
     expect(planRings(Number.NaN, 400, 'mi')).toEqual([]);
     expect(planRings(0.001, 100, 'km')).toEqual([]);
+  });
+});
+
+describe('formatDuration', () => {
+  it('gives minutes up to the hour, and hours with the minutes left over beyond it', () => {
+    expect(formatDuration(22 * 60 + 18)).toBe('22 min');
+    expect(formatDuration(59 * 60 + 29)).toBe('59 min');
+    expect(formatDuration(59 * 60 + 31)).toBe('1 h');
+    expect(formatDuration(65 * 60)).toBe('1 h 5 min');
+    expect(formatDuration(12 * 3600 + 40 * 60)).toBe('12 h 40 min');
+  });
+
+  it('never calls a drive shorter than a minute', () => {
+    expect(formatDuration(0)).toBe('1 min');
+    expect(formatDuration(20)).toBe('1 min');
+    expect(formatDuration(89)).toBe('1 min');
+    expect(formatDuration(91)).toBe('2 min');
+  });
+
+  it('ignores sign', () => {
+    expect(formatDuration(-600)).toBe('10 min');
   });
 });

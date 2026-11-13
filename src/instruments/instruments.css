@@ -38,7 +38,9 @@
  * stage positions are measured from the left whatever the page's writing direction.
  */
 .wwiwiwh-ring-label,
+.wwiwiwh-drive-ring-label,
 .wwiwiwh-trip-plaque,
+.wwiwiwh-drive-plaque,
 .wwiwiwh-trip-end,
 .wwiwiwh-pin-group,
 .wwiwiwh-pin-chip {
@@ -156,6 +158,65 @@
   inline-size: var(--target, 40px);
   block-size: var(--target, 40px);
   border-radius: 50%;
+}
+
+/* --- the rings about a drive's start: one through its end, one as far out as it is long by road --- */
+
+.wwiwiwh-drive-ring__casing {
+  stroke: var(--sheet);
+  stroke-width: 4;
+  opacity: 0.65;
+}
+
+/* Dashed where the pin's rings are dotted. Each ring's own pattern of dashes is set by script (see drive.ts). */
+.wwiwiwh-drive-ring {
+  stroke: var(--key);
+  stroke-width: 1.6;
+}
+
+/* Reversed like the drive's plaque, in the shape of a ring's label. */
+.wwiwiwh-drive-ring-label {
+  z-index: 1;
+  padding: 0 7px;
+  border: 1px solid var(--sheet);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--key);
+  color: var(--sheet);
+  font: 600 11px/14px var(--font-plate);
+  white-space: nowrap;
+}
+
+/* --- the ends of a drive --- */
+
+.wwiwiwh-drive__casing {
+  stroke: var(--sheet);
+  stroke-width: 5.5;
+}
+
+/* Where it starts: a ring, open like the start of anything. */
+.wwiwiwh-drive__start {
+  fill: var(--sheet);
+  stroke: var(--key);
+  stroke-width: 2.5;
+}
+
+/* Where it ends: a full stop. */
+.wwiwiwh-drive__end {
+  fill: var(--key);
+  stroke: var(--key);
+  stroke-width: 1.5;
+}
+
+.wwiwiwh-drive-plaque {
+  z-index: 2;
+  padding: 0 7px; /* keep in step with PLAQUE_PADDING_X_PX in drive.ts */
+  border-radius: var(--radius-tag, 2px);
+  /* Reversed, like the trip's plaque. */
+  background: var(--key);
+  color: var(--sheet);
+  font: 600 13px/20px var(--font-plate);
+  white-space: nowrap;
+  outline: 1px solid var(--sheet);
 }
 
 /* --- the pin --- */
@@ -380,7 +441,7 @@
   stroke-width: 1.5;
 }
 
-/* While measuring, a click anywhere places a trip end, the handles included: they step aside. */
+/* While measuring or setting a drive, a click anywhere places an end, the handles included: they step aside. */
 .wwiwiwh-instruments--measure .wwiwiwh-handle {
   pointer-events: none;
 }

@@ -1,7 +1,7 @@
-import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
+import type { LayerSpecification, Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
 import type { Theme, View } from '../app/types';
 import type { Registration } from '../geo/registration';
-import type { LngLat } from '../geo/types';
+import type { LngLat, Outline } from '../geo/types';
 
 /** A position inside the stage, in CSS pixels from its top-left corner. */
 export interface ScreenPoint {
@@ -26,6 +26,17 @@ export const SOURCE_ID = 'omt';
 /** The zoom levels the Away camera may take. */
 export const ZOOM_RANGE = { min: 4, max: 18 } as const;
 
+/**
+ * What a sheet shows besides its streets, printed by that sheet's own map in its own ink, so that
+ * it moves, turns and hides with the sheet: the road a drive takes, and the area a drive reaches.
+ */
+export interface SheetDrawing {
+  readonly route: readonly LngLat[] | null;
+  readonly reach: Outline | null;
+}
+
+export const NO_DRAWING: SheetDrawing = { route: null, reach: null };
+
 export interface MapStyles {
   /** Style of the Away (base) map. */
   readonly base: StyleSpecification;
@@ -35,6 +46,11 @@ export interface MapStyles {
    * maps thicken and thin together. Called again whenever the offset has drifted noticeably.
    */
   readonly overlay: (zoomOffset: number) => StyleSpecification;
+  /**
+   * The layers a sheet's drawing is printed with, to go on top of that sheet's style. `zoomOffset` is
+   * the same offset `overlay` takes, and matters to Home alone.
+   */
+  readonly drawing: (sheet: Sheet, zoomOffset: number) => LayerSpecification[];
   /** Registers runtime images (label tags, route shields) on a map. Called after each style load. */
   readonly prepare?: (map: MapLibreMap, sheet: Sheet) => void;
 }
@@ -182,6 +198,8 @@ export interface DualMap {
   setMeasureMode(on: boolean): void;
   setHomeHidden(hidden: boolean): void;
   setStyles(styles: MapStyles): void;
+  /** Replaces what a sheet shows besides its streets. A drawing whose route and reach are the ones already shown costs nothing. */
+  setDrawing(sheet: Sheet, drawing: SheetDrawing): void;
   /** Lets the pair act on a wheel event that landed on something drawn over the maps (a handle). */
   passWheel(event: WheelEvent): void;
 

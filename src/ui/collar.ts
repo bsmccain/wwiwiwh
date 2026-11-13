@@ -26,7 +26,7 @@ export interface Collar {
 
 export type CollarActions = Pick<
   Controller,
-  'pickPlace' | 'swap' | 'turnBy' | 'squareUp' | 'slideBy' | 'toggleSlide' | 'toggleMeasure' | 'toggleRings' | 'setHomeHidden'
+  'pickPlace' | 'swap' | 'turnBy' | 'squareUp' | 'slideBy' | 'toggleSlide' | 'toggleMeasure' | 'toggleDrive' | 'toggleRings' | 'setHomeHidden'
 >;
 
 /**

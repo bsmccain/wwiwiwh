@@ -2,7 +2,7 @@ import { isTurned, turnWords, turnWordsSpoken, type Span, type Spot } from '../a
 import type { Store } from '../app/store';
 import type { AppState } from '../app/types';
 import type { DualMap, Sheet } from '../map/contracts';
-import { pinSpans, pinSpot, sameSpans, sameWords, tripSpans, type NearestLookup, type Scene } from './sentences';
+import { driveSpans, pinSpans, pinSpot, sameSpans, sameWords, tripSpans, type NearestLookup, type Scene } from './sentences';
 import { throttle } from './throttle';
 
 /** While Home or a trip end is being dragged, the sentences are reworded at most this often. */
@@ -26,6 +26,10 @@ export interface Readouts {
   trip(): readonly Span[] | null;
   /** The same in as few words as possible, for narrow screens. */
   tripInShort(): readonly Span[] | null;
+  /** The drive's length and time by road and how far that gets on the other place, or null without a drive. */
+  drive(): readonly Span[] | null;
+  /** The same in as few words as possible, for narrow screens. */
+  driveInShort(): readonly Span[] | null;
   turn(): TurnReadout;
   /** Calls back when any of the wordings has changed. Returns a function that stops the calls. */
   onChange(listener: () => void): () => void;
@@ -36,7 +40,7 @@ function turnReadout(rotation: number): TurnReadout {
 }
 
 /**
- * Keeps the sentences about the pin, the trip and the turn in step with the maps. They are reworded
+ * Keeps the sentences about the pin, the trip, the drive and the turn in step with the maps. They are reworded
  * at once when something settles (a place is picked, a slide ends, the units change) and a few times
  * a second while Home is on the move.
  */
@@ -51,8 +55,8 @@ export function createReadouts(deps: {
   const listeners = new Set<() => void>();
 
   const scene = (): Scene => {
-    const { home, away, spots, trip, units } = store.get();
-    return { home, away, spots, trip, units, registration: dual.getRegistration() };
+    const { home, away, spots, trip, drive, route, reach, units } = store.get();
+    return { home, away, spots, trip, drive, route, reach, units, registration: dual.getRegistration() };
   };
   const word = (now: Scene) => ({
     pin: pinSpans(now, nearest),
@@ -60,6 +64,8 @@ export function createReadouts(deps: {
     away: pinSpot(now, 'away', nearest),
     trip: tripSpans(now, nearest),
     tripInShort: tripSpans(now, nearest, true),
+    drive: driveSpans(now, nearest),
+    driveInShort: driveSpans(now, nearest, true),
     turn: turnReadout(now.registration.rotation),
   });
 
@@ -73,6 +79,8 @@ export function createReadouts(deps: {
       sameWords(next.away, worded.away) &&
       sameSpans(next.trip, worded.trip) &&
       sameSpans(next.tripInShort, worded.tripInShort) &&
+      sameSpans(next.drive, worded.drive) &&
+      sameSpans(next.driveInShort, worded.driveInShort) &&
       next.turn.shown === worded.turn.shown &&
       next.turn.turned === worded.turn.turned;
     if (same) return;
@@ -83,7 +91,9 @@ export function createReadouts(deps: {
 
   store.subscribe((state, previous) => {
     const renamed = state.home !== previous.home || state.away !== previous.away || state.spots !== previous.spots;
-    if (renamed || state.units !== previous.units) rewording.flush();
+    // A drive, and each answer about it, is news in itself: nothing about it changes many times a second.
+    const driven = state.drive !== previous.drive || state.route !== previous.route || state.reach !== previous.reach;
+    if (renamed || driven || state.units !== previous.units) rewording.flush();
     // A trip end being dragged rewrites the trip on every pointer move.
     else if (state.trip !== previous.trip) rewording.request();
   });
@@ -98,6 +108,8 @@ export function createReadouts(deps: {
     pinSpot: (sheet) => worded[sheet],
     trip: () => worded.trip,
     tripInShort: () => worded.tripInShort,
+    drive: () => worded.drive,
+    driveInShort: () => worded.driveInShort,
     turn: () => worded.turn,
     onChange(listener) {
       listeners.add(listener);

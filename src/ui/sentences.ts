@@ -1,6 +1,7 @@
-import { describeSpot, namedSpot, pinSentence, tripSentence, type NearbyPlace, type Span, type Spot } from '../app/readout';
+import { onOtherSheet, otherSheet } from '../app/drive';
+import { describeSpot, driveSentence, namedSpot, pinSentence, tripSentence, type NearbyPlace, type Span, type Spot } from '../app/readout';
 import { nameAt, sameSpot } from '../app/spots';
-import type { PinSpots, Place, Trip } from '../app/types';
+import type { Drive, PinSpots, Place, ReachFinding, RouteFinding, Trip } from '../app/types';
 import { distanceMeters } from '../geo/distance';
 import { overlayToBase, type Registration } from '../geo/registration';
 import type { LngLat } from '../geo/types';
@@ -15,6 +16,10 @@ export interface Scene {
   /** What the person called the spots under the pin, if they chose them by address. */
   readonly spots?: PinSpots;
   readonly trip: Trip | null;
+  /** The drive, and what the road service has said about it and about its reach on the other place. */
+  readonly drive?: Drive | null;
+  readonly route?: RouteFinding | null;
+  readonly reach?: ReachFinding | null;
   readonly units: Units;
 }
 
@@ -88,6 +93,44 @@ export function tripSpans(scene: Scene, nearest: NearestLookup, compact = false)
     awayFrom: onAway(trip.from, trip.fromLanding),
     awayTo: onAway(trip.to, trip.toLanding),
     awayName: away.name,
+    compact,
+  });
+}
+
+/**
+ * The drive's length and time by road, and how far the same driving gets on the other place, or
+ * null when there is no drive. Until the road service has answered, it says that it is asking.
+ *
+ * `compact` asks for the short wording used on small screens. As with a trip, the ends are then
+ * named only when both have a name of their own.
+ */
+export function driveSpans(scene: Scene, nearest: NearestLookup, compact = false): Span[] | null {
+  const { drive, registration, units } = scene;
+  if (!drive) return null;
+  const other = otherSheet(drive.on);
+  const pinOn = (sheet: Sheet): LngLat => (sheet === 'home' ? registration.overlayAnchor : registration.baseAnchor);
+  // A spot that sits on the pin is the pin's spot, and goes by the same name.
+  const spotOn = (sheet: Sheet, at: LngLat, known?: string): Spot | null => {
+    if (known) return namedSpot(known);
+    if (sameSpot(at, pinOn(sheet))) return pinSpot(scene, sheet, nearest);
+    return describeSpot(at, scene[sheet], nearest(sheet, at), units);
+  };
+  const from = spotOn(drive.on, drive.from, drive.fromName);
+  const to = spotOn(drive.on, drive.to, drive.toName);
+  // Two ends that go by the same words name nothing, as with a trip.
+  const told = from?.text !== to?.text;
+  const nameEnds = told && (!compact || (from?.exact === true && to?.exact === true));
+  return driveSentence({
+    on: drive.on,
+    from: nameEnds ? from : null,
+    to: nameEnds ? to : null,
+    // Asked the moment the drive was set; "finding" until the answer is in.
+    route: scene.route ?? { status: 'finding' },
+    reach: scene.reach ?? null,
+    match: drive.match,
+    reachFrom: spotOn(other, onOtherSheet(registration, drive.on, drive.from)),
+    otherName: scene[other].name,
+    units,
     compact,
   });
 }

@@ -1,3 +1,5 @@
+import { placeDriveEnd } from '../app/drive';
+import type { AppState } from '../app/types';
 import { distanceMeters } from '../geo/distance';
 import type { LngLat } from '../geo/types';
 import { formatDistance } from '../geo/units';
@@ -17,13 +19,16 @@ const END_CLEARANCE_PX = 12;
 const MODIFIER_KEYS: ReadonlySet<string> = new Set(['Shift', 'Control', 'Alt', 'Meta', 'AltGraph']);
 
 export interface Measure extends Part {
-  /** While measuring: drops the next trip end at the middle of the stage. */
+  /** While measuring or setting a drive: drops the next end at the middle of the stage. */
   placeEndAtCenter(): void;
 }
 
 /**
  * Measuring: the next two clicks on the map draw a trip. After the first, a dashed rubber band runs
  * from it to the pointer, with the length so far.
+ *
+ * Setting a drive takes its two ends the same way, on whichever map the drive is on. It has no
+ * rubber band: the road between two spots is not the straight line between them.
  *
  * Without a pointer, ends are dropped at the middle of the stage (`placeEndAtCenter`), and a small
  * mark shows where that is. The mark is for people on that path only: it shows while the keyboard is
@@ -50,17 +55,23 @@ export function createMeasure({ dual, store, ink, layer, measurer, relayout }: I
   let lastHeardAt: ScreenPoint | null = null;
   /** Pointer movement is followed only while measuring. */
   let following: AbortController | null = null;
+  /** The mode the picture was last laid out for. */
+  let laidOutFor: AppState['mode'] | null = null;
   /** The picture as last laid out. */
   let centerAt: ScreenPoint | null = null;
   let firstEndAt: ScreenPoint | null = null;
 
-  const measuring = (): boolean => store.get().mode === 'measure';
+  /** The next press on the map puts down an end: of a trip, or of a drive. */
+  const placing = (): boolean => {
+    const { mode } = store.get();
+    return mode === 'measure' || mode === 'drive';
+  };
   const aimsAtCenter = (): boolean => droppedAtCenter || keyboardInUse;
 
   function setKeyboardInUse(on: boolean): void {
     if (keyboardInUse === on) return;
     keyboardInUse = on;
-    if (measuring()) relayout();
+    if (placing()) relayout();
   }
 
   const listeners = new AbortController();
@@ -112,38 +123,53 @@ export function createMeasure({ dual, store, ink, layer, measurer, relayout }: I
     window.addEventListener('pointermove', follow, { signal: following.signal });
   }
 
-  function placeEnd(home: LngLat, at: ScreenPoint): void {
-    const draft = store.get().tripDraft;
+  /** `spot` is what lies at the stage position `at` on each of the two maps. */
+  function placeEnd(spot: { readonly home: LngLat; readonly away: LngLat }, at: ScreenPoint): void {
+    const state = store.get();
+    if (state.mode === 'drive') {
+      const { driveSide, driveDraft } = state;
+      const startAt = driveDraft && (driveSide === 'home' ? dual.projectHome(driveDraft.at) : dual.projectAway(driveDraft.at));
+      if (startAt && distanceBetween(startAt, at) < SAME_SPOT_PX) return;
+      const change = placeDriveEnd(state, { at: spot[driveSide] });
+      if (change) store.set(change);
+      return;
+    }
+    const draft = state.tripDraft;
     if (!draft) {
-      store.set({ tripDraft: home });
+      store.set({ tripDraft: spot.home });
       return;
     }
     if (distanceBetween(dual.projectHome(draft), at) < SAME_SPOT_PX) return;
-    store.set({ trip: { from: draft, to: home }, tripDraft: null, mode: 'browse' });
+    // The line takes the place of any drive: there is one journey on the map at a time.
+    store.set({ trip: { from: draft, to: spot.home }, drive: null, tripDraft: null, mode: 'browse' });
   }
 
-  const offClick = dual.on('click', ({ point, home }) => {
-    if (measuring()) placeEnd(home, point);
+  const offClick = dual.on('click', ({ point, home, away }) => {
+    if (placing()) placeEnd({ home, away }, point);
   });
 
   return {
     placeEndAtCenter() {
-      if (!measuring()) return;
+      if (!placing()) return;
       const { width, height } = dual.getSize();
       const center = { x: width / 2, y: height / 2 };
       droppedAtCenter = true;
-      placeEnd(dual.unprojectHome(center), center);
+      placeEnd({ home: dual.unprojectHome(center), away: dual.unprojectAway(center) }, center);
       // The first end changes the store, which lays everything out; a refused second one changes nothing.
       relayout();
     },
     layout({ size, state }: Frame) {
-      const on = state.mode === 'measure';
+      const on = state.mode === 'measure' || state.mode === 'drive';
+      // Going straight from one tool to the other starts afresh: an end dropped at the middle for
+      // the one says nothing about where the other's ends are aimed.
+      if (state.mode !== laidOutFor) droppedAtCenter = false;
+      laidOutFor = state.mode;
       followPointer(on);
       const atCenter = on && aimsAtCenter();
       centerAt = atCenter ? { x: size.width / 2, y: size.height / 2 } : null;
       setHidden(centerMark, !atCenter);
 
-      const draft = on ? state.tripDraft : null;
+      const draft = state.mode === 'measure' ? state.tripDraft : null;
       if (!draft) {
         band.hide();
         firstEndAt = null;

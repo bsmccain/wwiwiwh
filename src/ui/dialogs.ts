@@ -111,10 +111,10 @@ export function createAboutDialog(deps: { overlays: Overlays }): SheetDialog {
         'wwiwiwh (Where Was I When I Was Here) lays the street map of a place you know over a place you are curious about. Both are drawn at the same size, so your feel for distances at home carries over.',
       ]),
       paragraph('about__promise', [
-        'Both maps are drawn at the same ground scale: matched at the pin, and within about 1% across a metro area. Distances are straight lines, not travel times.',
+        'Both maps are drawn at the same ground scale: matched at the pin, and within about 1% across a metro area. Measure gives straight lines. Drive follows the roads of one place, and shades how far the same time or distance of driving gets on the other; of the two rings about its start, the dashed one runs through its end, as far out as the end is in a straight line, and the other is as far out as the drive is long by road. Its times are estimates for a car, without traffic.',
       ]),
       paragraph('about__lead', [
-        "Addresses you search for are sent to Photon to be looked up, and a link you copy carries the pin's position and any names you gave it.",
+        "Addresses you search for are sent to Photon to be looked up, and the two ends of a drive, with the spot its start lands on in the other place, are sent to the routing server. A link you copy carries the pin's position, any drive, and any names you gave their spots.",
       ]),
       el('h3', 'about__heading', {}, ['Credits and licences']),
       el('ul', 'about__credits', {}, [
@@ -133,6 +133,13 @@ export function createAboutDialog(deps: { overlays: Overlays }): SheetDialog {
           ' schema.',
         ]),
         credit(['Place search by ', externalLink('https://photon.komoot.io', 'Photon'), ', from komoot.']),
+        credit([
+          'Driving routes by ',
+          externalLink('https://valhalla.github.io/valhalla/', 'Valhalla'),
+          ', on a server run by ',
+          externalLink('https://www.fossgis.de/', 'FOSSGIS'),
+          '.',
+        ]),
         credit(['Maps drawn with ', externalLink('https://maplibre.org', 'MapLibre GL JS'), '.']),
         credit([
           'Typefaces Barlow and Barlow Semi Condensed, under the ',

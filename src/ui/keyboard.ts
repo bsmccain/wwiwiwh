@@ -9,6 +9,7 @@ export interface KeyboardDeps {
   overlayIsOpen(): boolean;
   /** Home is being slid or turned with a pointer right now. */
   draggingHome(): boolean;
+  /** Measure or Drive is on, so Enter places an end. */
   measuring(): boolean;
   /** Single-key shortcuts are switched on. */
   singleKeys(): boolean;

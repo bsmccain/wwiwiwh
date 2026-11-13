@@ -4,6 +4,9 @@ export interface LngLat {
   readonly lat: number;
 }
 
+/** One or more areas on the ground, each an outer ring followed by any holes in it. Every ring ends where it starts. */
+export type Outline = readonly (readonly (readonly LngLat[])[])[];
+
 /** A point in Web-Mercator world space: x and y in [0, 1], y pointing south (same convention as MapLibre's MercatorCoordinate). */
 export interface Vec2 {
   readonly x: number;
