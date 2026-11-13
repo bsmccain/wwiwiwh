@@ -1,7 +1,7 @@
 {
   "name": "mapz",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.0-alpha",
   "description": "Lay the street map of a place you know over another place at the same scale.",
   "type": "module",
   "engines": {
