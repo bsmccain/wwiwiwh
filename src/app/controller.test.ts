@@ -3,19 +3,30 @@ import { distanceMeters } from '../geo/distance';
 import { baseToOverlay, overlayToBase } from '../geo/registration';
 import { spansToText } from './readout';
 import { pinSpans, tripSpans } from '../ui/sentences';
-import type { MapStyles } from '../map/contracts';
+import { NO_DRAWING, type MapStyles } from '../map/contracts';
+import type { RoadService } from '../routing/valhalla';
 import { createController, FRAMING_ZOOM, LINE_ZOOM, SPOT_ZOOM, type Controller } from './controller';
 import type { Prefs } from './prefs';
 import { centeredRegistration, defaultLinkState, presetPlace } from './defaults';
 import { createLinkSync, type AddressBar } from './link-sync';
 import { createStore, type Store } from './store';
 import { FakeDualMap } from './testing/fake-dual';
-import type { AppState, Place } from './types';
+import type { AppState, Drive, Place } from './types';
 import { decodeLink } from './url';
 
 const tokyo = presetPlace('tokyo') as Place;
 const paris = presetPlace('paris') as Place;
 const berlin = presetPlace('berlin') as Place;
+
+/** A road service that is asked and never answers, so that no test here leans on the public server. */
+function silentRoads(): { roads: RoadService; asked: string[] } {
+  const asked: string[] = [];
+  const never = <A>(what: string): Promise<A> => {
+    asked.push(what);
+    return new Promise<A>(() => undefined);
+  };
+  return { roads: { route: () => never('route'), reach: () => never('reach') }, asked };
+}
 
 function setup() {
   const link = defaultLinkState();
@@ -23,6 +34,10 @@ function setup() {
     ...link,
     mode: 'browse',
     tripDraft: null,
+    driveSide: 'home',
+    driveDraft: null,
+    route: null,
+    reach: null,
     homeHidden: false,
     units: 'mi',
     themeChoice: 'auto',
@@ -35,7 +50,8 @@ function setup() {
   const themeListeners = new Set<() => void>();
   const applied: string[] = [];
   const saved: Prefs[] = [];
-  const fakeStyles = { base: {}, overlay: () => ({}) } as unknown as MapStyles;
+  const roads = silentRoads();
+  const fakeStyles = { base: {}, overlay: () => ({}), drawing: () => [] } as unknown as MapStyles;
   const controller = createController({
     store,
     dual,
@@ -50,12 +66,13 @@ function setup() {
     applyTheme: (theme) => applied.push(theme),
     pageUrl: () => 'https://example.test/wwiwiwh/',
     savePrefs: (prefs) => saved.push(prefs),
+    roads: roads.roads,
   });
   const setSystemDark = (dark: boolean) => {
     prefersDark = dark;
     for (const listener of themeListeners) listener();
   };
-  return { store, dual, controller, applied, saved, setSystemDark };
+  return { store, dual, controller, applied, saved, setSystemDark, roadsAsked: roads.asked };
 }
 
 describe('controller', () => {
@@ -475,6 +492,206 @@ describe('controller', () => {
   });
 });
 
+describe('a drive', () => {
+  const paloAlto = { lat: 37.4419, lng: -122.143 };
+  const sanJoseCentre = defaultLinkState().home.center;
+  const kingsCross = { lat: 51.5308, lng: -0.1238 };
+  const heathrow = { lat: 51.47, lng: -0.4543 };
+  const onHome: Drive = { on: 'home', from: paloAlto, to: sanJoseCentre, match: 'time' };
+  const route = { meters: 27_963, seconds: 1338, line: [paloAlto, sanJoseCentre] };
+  const outline = [[[paloAlto, sanJoseCentre, kingsCross, paloAlto]]];
+
+  it('is set by its two ends on one place, takes the place of the trip, and is asked about', () => {
+    vi.useFakeTimers();
+    const { store, dual, controller, roadsAsked } = setup();
+    expect(store.get().trip).not.toBeNull();
+    controller.toggleDrive();
+    expect(store.get().mode).toBe('drive');
+    // Presses on the map are taken as they are while measuring.
+    expect(dual.measureMode).toBe(true);
+    expect(controller.driveEnd('away', { name: 'King’s Cross', position: kingsCross })).toBe(true);
+    expect(store.get()).toMatchObject({ mode: 'drive', driveSide: 'away', driveDraft: { at: kingsCross, name: 'King’s Cross' }, drive: null });
+    expect(controller.driveEnd('away', { name: 'Heathrow', position: heathrow })).toBe(true);
+    expect(store.get()).toMatchObject({
+      mode: 'browse',
+      driveDraft: null,
+      trip: null,
+      drive: { on: 'away', from: kingsCross, to: heathrow, fromName: 'King’s Cross', toName: 'Heathrow', match: 'time' },
+      route: { status: 'finding' },
+    });
+    expect(dual.measureMode).toBe(false);
+    try {
+      vi.advanceTimersByTime(0);
+      expect(roadsAsked).toEqual(['route']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('refuses an end on the other place, or on the spot it starts from', () => {
+    const { store, controller } = setup();
+    controller.toggleDrive();
+    controller.driveEnd('away', { name: 'King’s Cross', position: kingsCross });
+    expect(controller.driveEnd('home', { name: 'Palo Alto', position: paloAlto })).toBe(false);
+    expect(controller.driveEnd('away', { name: 'The same door', position: kingsCross })).toBe(false);
+    expect(store.get()).toMatchObject({ mode: 'drive', drive: null, driveDraft: { at: kingsCross } });
+  });
+
+  it('brings a start picked by address into sight, and frames the finished drive when an end is out of sight', () => {
+    const { store, dual, controller } = setup();
+    controller.toggleDrive();
+    const reading = { lat: 51.4543, lng: -0.9781 };
+    controller.driveEnd('away', { name: 'Reading', position: reading });
+    expect(distanceMeters(dual.getView().center, reading)).toBeLessThan(1);
+    dual.calls.length = 0;
+    controller.driveEnd('away', { name: 'Heathrow', position: heathrow });
+    expect(dual.calls).toContain('fit');
+    // The view that shows the drive is theirs: it goes into the link.
+    expect(store.get().view).not.toBeNull();
+  });
+
+  it('leaves the view alone when both ends are in sight already', () => {
+    const { dual, controller } = setup();
+    controller.toggleDrive();
+    const { center } = dual.getView();
+    controller.driveEnd('away', { name: null, position: center });
+    dual.calls.length = 0;
+    controller.driveEnd('away', { name: null, position: dual.unprojectAway({ x: 600, y: 300 }) });
+    expect(dual.calls).not.toContain('fit');
+    expect(dual.calls).not.toContain('setView');
+  });
+
+  it('is made from the trip, between the same two ends and by the same names', () => {
+    const { store, controller } = setup();
+    const trip = store.get().trip;
+    controller.driveTheTrip();
+    expect(store.get().trip).toBeNull();
+    expect(store.get().drive).toEqual({ on: 'home', from: trip?.from, to: trip?.to, fromName: 'Palo Alto', toName: 'San Jose', match: 'time' });
+  });
+
+  it('gives way to a line that is measured after it', () => {
+    const { store, controller } = setup();
+    controller.driveTheTrip();
+    controller.measureTo('home', { name: 'Stanford Stadium', position: { lat: 37.4346, lng: -122.1609 } });
+    expect(store.get().drive).toBeNull();
+    expect(store.get().trip).not.toBeNull();
+  });
+
+  it('draws the road on the place it is driven on, and the reach on the other', () => {
+    const { store, dual } = setup();
+    store.set({ drive: onHome, trip: null });
+    store.set({ route: { status: 'found', route } });
+    expect(dual.drawings).toEqual({ home: { route: route.line, reach: null }, away: NO_DRAWING });
+    store.set({ reach: { status: 'found', outline } });
+    expect(dual.drawings).toEqual({ home: { route: route.line, reach: null }, away: { route: null, reach: outline } });
+    store.set({ drive: { ...onHome, to: kingsCross } });
+    // Another drive: nothing is known about it yet.
+    expect(dual.drawings).toEqual({ home: NO_DRAWING, away: NO_DRAWING });
+  });
+
+  it('stays on its own roads when the places are swapped: the other sheet is now the one it is on', () => {
+    const { store, dual, controller } = setup();
+    store.set({ drive: onHome, trip: null });
+    store.set({ route: { status: 'found', route } });
+    store.set({ reach: { status: 'found', outline } });
+    controller.swap();
+    expect(store.get().drive).toEqual({ ...onHome, on: 'away' });
+    expect(store.get().driveSide).toBe('away');
+    // Nothing new to ask: the same road, and the same spot for its start on the other place.
+    expect(store.get().route).toEqual({ status: 'found', route });
+    expect(store.get().reach).toEqual({ status: 'found', outline });
+    expect(dual.drawings).toEqual({ away: { route: route.line, reach: null }, home: { route: null, reach: outline } });
+  });
+
+  it('survives a change of the other place, and goes with its own', () => {
+    const { store, controller } = setup();
+    store.set({ drive: onHome, trip: null });
+    controller.pickPlace('away', tokyo);
+    expect(store.get().drive).toBe(onHome);
+    expect(store.get().trip).toBeNull();
+    controller.pickPlace('home', berlin);
+    expect(store.get().drive).toBeNull();
+    // A new Home that comes with a trip of its own brings it, now that no drive is in its place.
+    controller.pickPlace('home', presetPlace('san-jose') as Place);
+    expect(store.get().trip?.fromName).toBe('Palo Alto');
+  });
+
+  it('keeps the drive, and not the new Home’s own trip, when Home changes under a drive on Away', () => {
+    const { store, controller } = setup();
+    const onAway: Drive = { on: 'away', from: kingsCross, to: heathrow, match: 'time' };
+    store.set({ drive: onAway, trip: null, home: berlin });
+    controller.pickPlace('home', presetPlace('san-jose') as Place);
+    expect(store.get().drive).toBe(onAway);
+    expect(store.get().trip).toBeNull();
+  });
+
+  it('frames its two ends with the pin, whichever place it is on', () => {
+    const { store, dual, controller } = setup();
+    store.set({ drive: { on: 'away', from: kingsCross, to: heathrow, match: 'time' }, trip: null });
+    dual.calls.length = 0;
+    controller.frame();
+    expect(dual.calls).toEqual(['fit']);
+    // The pin goes in the middle: each end is framed together with its mirror image through it.
+    expect(distanceMeters(dual.getView().center, dual.getRegistration().baseAnchor)).toBeLessThan(1);
+  });
+
+  it('switches what the reach matches, and only when there is a drive', () => {
+    const { store, controller } = setup();
+    controller.setDriveMatch('distance');
+    expect(store.get().drive).toBeNull();
+    store.set({ drive: onHome, trip: null });
+    controller.setDriveMatch('distance');
+    expect(store.get().drive).toEqual({ ...onHome, match: 'distance' });
+    const same = store.get().drive;
+    controller.setDriveMatch('distance');
+    expect(store.get().drive).toBe(same);
+  });
+
+  it('is cleared with whatever was found out about it', () => {
+    const { store, dual, controller } = setup();
+    store.set({ drive: onHome, trip: null });
+    store.set({ route: { status: 'found', route } });
+    controller.clearDrive();
+    expect(store.get()).toMatchObject({ drive: null, route: null, reach: null });
+    expect(dual.drawings).toEqual({ home: NO_DRAWING, away: NO_DRAWING });
+  });
+
+  it('starts over on the place the last drive was on, and takes up a start again when the place is switched', () => {
+    const { store, controller } = setup();
+    store.set({ drive: { ...onHome, on: 'away' }, trip: null });
+    controller.toggleDrive();
+    expect(store.get().driveSide).toBe('away');
+    controller.driveEnd('away', { name: null, position: kingsCross });
+    controller.setDriveSide('home');
+    expect(store.get()).toMatchObject({ driveSide: 'home', driveDraft: null, mode: 'drive' });
+    controller.toggleDrive();
+    expect(store.get().mode).toBe('browse');
+  });
+
+  it('leaves a start behind when the mode is left, however it is left', () => {
+    for (const leave of ['cancel', 'toggleSlide', 'toggleMeasure', 'lineUpAgain', 'swap'] as const) {
+      const { store, controller } = setup();
+      controller.toggleDrive();
+      controller.driveEnd('home', { name: null, position: paloAlto });
+      controller[leave]();
+      expect(store.get().driveDraft, leave).toBeNull();
+      expect(store.get().mode, leave).not.toBe('drive');
+    }
+  });
+
+  it('is part of the link, and comes back from it', () => {
+    const { store, controller } = setup();
+    store.set({ drive: { on: 'away', from: kingsCross, to: heathrow, toName: 'Heathrow', match: 'distance' }, trip: null });
+    const link = controller.currentLink();
+    expect(link).toContain('&drive=51.5308,-0.1238~51.47,-0.4543&on=away&dt=Heathrow&same=distance');
+    const again = setup();
+    again.controller.applyLink(decodeLink(link.slice(link.indexOf('#'))).state);
+    expect(again.store.get().drive).toEqual(store.get().drive);
+    expect(again.store.get().driveSide).toBe('away');
+    expect(again.store.get().route).toEqual({ status: 'finding' });
+  });
+});
+
 describe('link sync', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
@@ -563,6 +780,18 @@ describe('link sync', () => {
     const calls = dual.calls.length;
     navigateTo('#home=san-jose&away=paris');
     expect(dual.calls.length).toBe(calls);
+    expect(log).toHaveLength(1);
+  });
+
+  it('rewrites the entry for a drive, and never for what the road service says about it', () => {
+    const { store, log } = withAddress();
+    const drive: Drive = { on: 'home', from: { lat: 37.4419, lng: -122.143 }, to: { lat: 37.3382, lng: -121.8863 }, match: 'time' };
+    store.set({ drive, trip: null });
+    vi.advanceTimersByTime(300);
+    expect(log).toEqual(['replace home=san-jose&away=london&drive=37.4419,-122.143~37.3382,-121.8863']);
+    store.set({ route: { status: 'found', route: { meters: 1, seconds: 1, line: [] } }, reach: { status: 'finding' } });
+    store.set({ reach: { status: 'unavailable' } });
+    vi.advanceTimersByTime(5000);
     expect(log).toHaveLength(1);
   });
 

@@ -19,6 +19,7 @@ const NO_MAP_ACTIONS: CollarActions = {
   slideBy: nothing,
   toggleSlide: nothing,
   toggleMeasure: nothing,
+  toggleDrive: nothing,
   toggleRings: nothing,
   setHomeHidden: nothing,
 };

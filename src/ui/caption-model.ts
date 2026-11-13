@@ -1,5 +1,6 @@
 import type { Span } from '../app/readout';
 import type { Mode } from '../app/types';
+import type { Sheet } from '../map/contracts';
 
 /**
  * What the caption band says. It carries one message at a time: what the current mode expects, then
@@ -19,15 +20,22 @@ export type CaptionAction =
   | 'to-address'
   | 'cancel'
   | 'clear-trip'
-  | 'pin-here';
+  | 'pin-here'
+  | 'drive-on-away'
+  | 'drive-trip'
+  | 'same-distance'
+  | 'retry-drive'
+  | 'clear-drive';
 
 export interface CaptionButton {
   readonly action: CaptionAction;
   readonly disabled: boolean;
+  /** For a button that is a switch: whether it is on. Left out for a button that simply acts. */
+  readonly pressed?: boolean;
 }
 
 export interface Caption {
-  readonly kind: 'slide' | 'measure' | 'scale' | 'trip' | 'pin' | 'invitation';
+  readonly kind: 'slide' | 'measure' | 'driving' | 'scale' | 'drive' | 'trip' | 'pin' | 'invitation';
   readonly tone: 'loud' | 'quiet';
   readonly spans: readonly Span[];
   /** The words are the pin sentence: its two spots can be pressed to choose them by address. */
@@ -51,6 +59,11 @@ export interface CaptionInput {
   readonly slidSinceModeOn: boolean;
   readonly drift: ScaleDrift | null;
   readonly trip: readonly Span[] | null;
+  /** While a drive is being set: the place it is on, and whether its start has been placed. */
+  readonly driveOn: { readonly sheet: Sheet; readonly place: string };
+  readonly driveStarted: boolean;
+  /** What there is to say about the drive on the map, and what can be done about it; null without one. */
+  readonly drive: DriveCaption | null;
   readonly pin: readonly Span[] | null;
   /** Home is turned at all. */
   readonly turned: boolean;
@@ -64,6 +77,16 @@ export interface CaptionInput {
   readonly singleKeys: boolean;
 }
 
+export interface DriveCaption {
+  readonly spans: readonly Span[];
+  /** The route is there, so there is a reach to match to its time or to its distance. */
+  readonly routed: boolean;
+  /** The reach is matched to the drive's distance instead of its time. */
+  readonly byDistance: boolean;
+  /** The road service failed to answer, and can be asked again. */
+  readonly retry: boolean;
+}
+
 export const CAPTION_COPY = {
   slideTouch: 'Sliding Home. Drag to slide it, twist with two fingers to turn it.',
   slideMouse: 'Sliding Home. Drag to slide it; hold Alt and drag to turn it.',
@@ -71,8 +94,9 @@ export const CAPTION_COPY = {
   slideKeysShifted: 'Sliding Home. Shift and the arrow keys slide it; Shift with [ or ] turns it.',
   measureKeysStart: 'Press Enter to set the start at the centre mark.',
   measureKeysEnd: 'Move the map, then press Enter to set the end.',
+  driveKeysEnd: 'Move the map, then press Enter to set where the drive ends.',
   scaleZoom: 'Zoom in to compare. This far out the two maps stretch differently.',
-  invitation: 'Draw a line you know with Measure to see how far it reaches here.',
+  invitation: 'Draw a line you know with Measure, or a road you know with Drive, to see how far it reaches here.',
 } as const;
 
 function slidePrompt(input: CaptionInput): string {
@@ -84,6 +108,29 @@ function measurePrompt(input: CaptionInput): string {
   if (input.input === 'keyboard') return input.tripStarted ? CAPTION_COPY.measureKeysEnd : CAPTION_COPY.measureKeysStart;
   const press = input.input === 'touch' ? 'tap' : 'click';
   return input.tripStarted ? `Now ${press} where it ends.` : `${press.charAt(0).toUpperCase()}${press.slice(1)} where the trip starts.`;
+}
+
+/**
+ * "Click where the drive starts in San Jose.", with the place in its ink: which of the two maps the
+ * click is read on is the one thing about a drive that cannot be seen on the map.
+ */
+function drivePrompt(input: CaptionInput): Span[] {
+  const { sheet, place } = input.driveOn;
+  if (input.input === 'keyboard') {
+    if (input.driveStarted) return [{ text: CAPTION_COPY.driveKeysEnd }];
+    return [{ text: 'Press Enter to set where the drive starts in ' }, { text: place, ink: sheet }, { text: ', at the centre mark.' }];
+  }
+  const press = input.input === 'touch' ? 'tap' : 'click';
+  if (input.driveStarted) return [{ text: `Now ${press} where it ends in ` }, { text: place, ink: sheet }, { text: '.' }];
+  return [{ text: `${press.charAt(0).toUpperCase()}${press.slice(1)} where the drive starts in ` }, { text: place, ink: sheet }, { text: '.' }];
+}
+
+function driveButtons(drive: DriveCaption): CaptionButton[] {
+  return [
+    ...(drive.routed ? [{ action: 'same-distance', disabled: false, pressed: drive.byDistance } as const] : []),
+    ...(drive.retry ? [enabled('retry-drive')] : []),
+    enabled('clear-drive'),
+  ];
 }
 
 function scaleFarFromPin(percent: number): string {
@@ -118,12 +165,28 @@ export function captionFor(input: CaptionInput): Caption {
     // The other way to say where the trip goes: by its address, in place of a press on the map.
     return { kind: 'measure', tone: 'loud', ...plain(measurePrompt(input)), buttons: [enabled('to-address'), enabled('cancel')] };
   }
+  if (input.mode === 'drive') {
+    return {
+      kind: 'driving',
+      tone: 'loud',
+      spans: drivePrompt(input),
+      pinSentence: false,
+      buttons: [
+        // Which place the drive is on is settled by its start: once that is down, the switch only shows it.
+        { action: 'drive-on-away', disabled: input.driveStarted, pressed: input.driveOn.sheet === 'away' },
+        enabled('to-address'),
+        enabled('cancel'),
+      ],
+    };
+  }
   if (input.drift) {
     return input.drift.pinOnStage
       ? { kind: 'scale', tone: 'loud', ...plain(CAPTION_COPY.scaleZoom), buttons: [] }
       : { kind: 'scale', tone: 'loud', ...plain(scaleFarFromPin(input.drift.percent)), buttons: [enabled('pin-here')] };
   }
-  if (input.trip) return { kind: 'trip', tone: 'quiet', spans: input.trip, pinSentence: false, buttons: [enabled('clear-trip')] };
+  if (input.drive) return { kind: 'drive', tone: 'quiet', spans: input.drive.spans, pinSentence: false, buttons: driveButtons(input.drive) };
+  // The same two ends by road: the straight line is what people know least about a trip they drive.
+  if (input.trip) return { kind: 'trip', tone: 'quiet', spans: input.trip, pinSentence: false, buttons: [enabled('drive-trip'), enabled('clear-trip')] };
   if (!input.pinInCollar && input.pin) return { kind: 'pin', tone: 'quiet', spans: input.pin, pinSentence: true, buttons: [] };
   return { kind: 'invitation', tone: 'quiet', ...plain(CAPTION_COPY.invitation), buttons: [] };
 }

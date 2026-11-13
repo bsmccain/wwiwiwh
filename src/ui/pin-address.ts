@@ -5,7 +5,7 @@ import type { AppState } from '../app/types';
 import { overlayToBase } from '../geo/registration';
 import type { DualMap, ScreenPoint, Sheet } from '../map/contracts';
 import type { PlacePicker } from '../search/picker';
-import { openSpotPicker, openTripTargetPicker } from '../search/spot-picker';
+import { openDriveEndPicker, openDriveStartPicker, openSpotPicker, openTripTargetPicker } from '../search/spot-picker';
 import type { InputWatch } from './input-mode';
 import type { Overlays } from './overlays';
 import { openPinMenu, type PinMenu, type PinMenuChoice } from './pin-menu';
@@ -31,7 +31,16 @@ export interface PinAddress {
   toggleSpotPicker(sheet: Sheet, anchor: HTMLElement): void;
   /** Opens the picker for where a trip from the pin goes, or closes it when that control's picker is open. */
   toggleTripTargetPicker(anchor: HTMLElement): void;
+  /**
+   * While a drive is being set: opens the picker for its next end, or closes it when that control's
+   * picker is open. The start is looked for in both places; once it is picked, the picker for the
+   * end follows at once, in the place the start was found in.
+   */
+  toggleDriveEndPicker(anchor: HTMLElement): void;
 }
+
+/** What a picker opened here chooses: an end of the pin, where the trip goes, or an end of a drive. */
+type PickerChoice = PinMenuChoice | 'drive';
 
 interface OpenMenu {
   readonly panel: PinMenu;
@@ -43,7 +52,7 @@ interface OpenMenu {
 }
 
 interface OpenPicker {
-  readonly choice: PinMenuChoice;
+  readonly choice: PickerChoice;
   readonly anchor: HTMLElement;
   readonly handle: PlacePicker;
 }
@@ -56,7 +65,7 @@ interface OpenPicker {
 export function createPinAddress(deps: {
   store: Store<AppState>;
   dual: Pick<DualMap, 'on' | 'getRegistration' | 'projectAway'>;
-  controller: Pick<Controller, 'pinSpot' | 'measureTo' | 'pinAtCenter' | 'pinIsOnStage'>;
+  controller: Pick<Controller, 'pinSpot' | 'measureTo' | 'driveEnd' | 'pinAtCenter' | 'pinIsOnStage'>;
   readouts: Pick<Readouts, 'pinSpot' | 'onChange'>;
   overlays: Overlays;
   input: InputWatch;
@@ -65,7 +74,7 @@ export function createPinAddress(deps: {
   /** The collar's More button, which the menu rises from when it was not the pin that asked. */
   collarAnchor: HTMLElement;
   /** Where focus goes when a picker closes and the control it opened from is no longer there to take it. */
-  focusAfter: { readonly spot: () => void; readonly trip: () => void };
+  focusAfter: { readonly spot: () => void; readonly trip: () => void; readonly drive: () => void };
 }): PinAddress {
   const { store, dual, controller, readouts, overlays } = deps;
   const sheetScreen = window.matchMedia(SHEET_QUERY);
@@ -86,8 +95,8 @@ export function createPinAddress(deps: {
   const leavingByTab = (): boolean => lastTab !== null && lastTab.eventPhase !== Event.NONE;
 
   /** Opens the picker for a choice. `onClosed` hears whether it closed with a pick that took effect. */
-  const openPicker = (choice: PinMenuChoice, anchor: HTMLElement, onClosed: (picked: boolean) => void): PlacePicker => {
-    const { home, away, tripDraft } = store.get();
+  const openPicker = (choice: PickerChoice, anchor: HTMLElement, onClosed: (picked: boolean) => void): PlacePicker => {
+    const { home, away, tripDraft, driveSide, driveDraft } = store.get();
     const registration = dual.getRegistration();
     // A line to an address starts where measuring has already put its start, otherwise at the pin.
     const lineStart = tripDraft ?? registration.overlayAnchor;
@@ -105,8 +114,32 @@ export function createPinAddress(deps: {
       // The picker says "on …" of the Away spot and begins a sentence with the Home spot.
       return spot && (sheet === 'home' ? spotWords(spot) : spotLabel(spot));
     };
+    const openDrivePicker = (): PlacePicker =>
+      driveDraft === null
+        ? openDriveStartPicker({
+            home,
+            away,
+            anchor,
+            onPick(sheet, spot) {
+              picked = controller.driveEnd(sheet, spot);
+            },
+            onClose,
+          })
+        : openDriveEndPicker({
+            sheet: driveSide,
+            place: driveSide === 'home' ? home : away,
+            start: { position: driveDraft.at, name: driveDraft.name ?? null },
+            anchor,
+            onPick(spot) {
+              // Nothing is driven to the spot the drive starts from; the picker then closes as if nothing had been picked.
+              picked = controller.driveEnd(driveSide, spot);
+            },
+            onClose,
+          });
     const handle: PlacePicker =
-      choice === 'trip'
+      choice === 'drive'
+        ? openDrivePicker()
+        : choice === 'trip'
         ? openTripTargetPicker({
             home,
             away,
@@ -135,15 +168,21 @@ export function createPinAddress(deps: {
   };
 
   /** Opens a picker from a control on the page, or closes the one that control has open. */
-  const togglePicker = (choice: PinMenuChoice, anchor: HTMLElement): void => {
+  const togglePicker = (choice: PickerChoice, anchor: HTMLElement): void => {
     if (picker?.choice === choice && picker.anchor === anchor) {
       picker.handle.close();
       return;
     }
-    openPicker(choice, anchor, () => {
+    openPicker(choice, anchor, (picked) => {
+      const state = store.get();
+      // A drive's start was picked: its end is asked for next, from the same control, without a press in between.
+      if (choice === 'drive' && picked && state.mode === 'drive' && state.driveDraft !== null && anchor.isConnected && !leavingByTab()) {
+        togglePicker('drive', anchor);
+        return;
+      }
       const focused = document.activeElement;
       // The pick can take the control away: a caption that goes on to say something else, a mode that ends.
-      if (!focused || focused === document.body) deps.focusAfter[choice === 'trip' ? 'trip' : 'spot']();
+      if (!focused || focused === document.body) deps.focusAfter[choice === 'trip' || choice === 'drive' ? choice : 'spot']();
     });
   };
 
@@ -228,5 +267,6 @@ export function createPinAddress(deps: {
     },
     toggleSpotPicker: togglePicker,
     toggleTripTargetPicker: (anchor) => togglePicker('trip', anchor),
+    toggleDriveEndPicker: (anchor) => togglePicker('drive', anchor),
   };
 }

@@ -39,6 +39,7 @@ export function defaultLinkState(): LinkState {
     spots: NO_SPOTS,
     view: null,
     trip: defaultTripFor(home),
+    drive: null,
     rings: true,
   };
 }

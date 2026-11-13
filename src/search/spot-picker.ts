@@ -1,4 +1,5 @@
 import type { Place } from '../app/types';
+import { distanceMeters } from '../geo/distance';
 import type { LngLat } from '../geo/types';
 import { type BothSheets, shareBetweenSheets } from './both-sheets';
 import type { PlacePicker } from './picker';
@@ -41,7 +42,34 @@ export interface TripTargetPickerOptions {
   onClose(): void;
 }
 
+export interface DriveStartPickerOptions {
+  home: Place;
+  away: Place;
+  /** The control the picker belongs to; see `PlacePickerOptions.anchor`. */
+  anchor: HTMLElement;
+  /** Called when a spot is chosen, with the map it was found on, which is the map the drive is then on; the picker closes straight after. */
+  onPick(sheet: 'home' | 'away', spot: { name: string; position: LngLat }): void;
+  /** Called exactly once, however the picker closes. */
+  onClose(): void;
+}
+
+export interface DriveEndPickerOptions {
+  /** The map the drive is on: its end is looked for in and around the same place as its start. */
+  sheet: 'home' | 'away';
+  place: Place;
+  /** Where the drive starts, and what that spot is called when it has a name. A spot within 30 m of it is not offered. */
+  start: { position: LngLat; name: string | null };
+  /** The control the picker belongs to; see `PlacePickerOptions.anchor`. */
+  anchor: HTMLElement;
+  /** Called when a spot is chosen; the picker closes straight after. The place's centre has no name of its own. */
+  onPick(spot: { name: string | null; position: LngLat }): void;
+  /** Called exactly once, however the picker closes. */
+  onClose(): void;
+}
+
 const PLACEHOLDER = 'Address, landmark or neighbourhood';
+/** A spot this close to where a drive starts is where it starts: the same building, a door or two along. */
+const SAME_SPOT_METERS = 30;
 const ROWS_ARE = { list: 'Spots', one: 'spot', many: 'spots' } as const;
 const UNAVAILABLE = "Search isn't answering right now. Try again.";
 const ADVICE = 'Check the spelling, or try a street or a landmark.';
@@ -136,7 +164,88 @@ export function openSpotPicker(options: SpotPickerOptions): PlacePicker {
  * and behaves as the place picker does.
  */
 export function openTripTargetPicker(options: TripTargetPickerOptions): PlacePicker {
-  const { home, away, skip, fromPin = true } = options;
+  const { home, away, fromPin = true } = options;
+  return openBothPlacesPicker(options, {
+    lead: fromPin ? 'Measure from the pin to where?' : 'Measure to where?',
+    line: `An address or landmark in ${home.name} or in ${away.name}.`,
+    allSkipped: (query) => `Everything that matches “${query}” is where the line starts. Try another address or landmark.`,
+  });
+}
+
+/**
+ * Opens the picker for where a drive should start: an address or a landmark in or near either
+ * place, listed by place, or a spot picked before. The place the spot is found in is the place the
+ * drive is on. It looks and behaves as the place picker does.
+ */
+export function openDriveStartPicker(options: DriveStartPickerOptions): PlacePicker {
+  const { home, away } = options;
+  return openBothPlacesPicker(options, {
+    lead: 'Drive from where?',
+    line: `An address or landmark in ${home.name} or in ${away.name}: the drive is on that place’s roads.`,
+    // Nothing is skipped, so this is never said.
+    allSkipped: () => ADVICE,
+  });
+}
+
+/**
+ * Opens the picker for where a drive should end: an address, a landmark or a neighbourhood in or
+ * near the place it started in, that place's own centre, or a spot picked before. The spot the
+ * drive starts from is not offered. It looks and behaves as the place picker does.
+ */
+export function openDriveEndPicker(options: DriveEndPickerOptions): PlacePicker {
+  const { sheet, place, start } = options;
+  const elsewhere = <S extends ListedSpot>(spots: readonly S[]): S[] =>
+    spots.filter((spot) => distanceMeters(spot.position, start.position) > SAME_SPOT_METERS);
+  /** The one row that is not a spot with a name of its own. */
+  const centre: ListedSpot = { name: `The centre of ${place.name}`, context: '', position: place.center };
+  const recent = recentSpotsNear(place.center, RECENT_SHOWN);
+
+  return openSearchPicker<ListedSpot, SpotHit[]>({
+    anchor: options.anchor,
+    heading: { ink: sheet, lead: `Drive to where in ${place.name}?` },
+    line: start.name ? `From ${start.name}, by road.` : 'From the start you set, by road.',
+    placeholder: PLACEHOLDER,
+    rowsAre: ROWS_ARE,
+    unavailable: UNAVAILABLE,
+    noMatch: (query, found) =>
+      found.length > 0
+        ? `Everything that matches “${query}” is where the drive starts. Try another address or landmark.`
+        : `No spot matches “${query}” in or near ${place.name}. ${ADVICE}`,
+    browse: () => [{ rows: elsewhere([centre]) }, { label: 'Recent', rows: elsewhere(recent) }],
+    remote: {
+      ...SPOT_SEARCH_MANNERS,
+      search: (query, signal) => searchSpots(query, place.center, signal),
+      memory: spotAnswers,
+      scope: scopeOf(place),
+    },
+    answers: (_query, state) => (state.status === 'done' ? [{ rows: elsewhere(state.answer) }] : []),
+    look: (spot) => lookOf(spot),
+    onPick(spot) {
+      if (spot === centre) {
+        options.onPick({ name: null, position: centre.position });
+        return;
+      }
+      remember(spot);
+      options.onPick({ name: spot.name, position: spot.position });
+    },
+    onClose: () => options.onClose(),
+  });
+}
+
+/** What a picker that lists both places says of itself. */
+interface BothPlacesCopy {
+  readonly lead: string;
+  readonly line: string;
+  /** Said when every spot that matched was one of those to skip. */
+  readonly allSkipped: (query: string) => string;
+}
+
+/** A picker of spots in or near either place, listed by place: the trip's target, and a drive's start. */
+function openBothPlacesPicker(
+  options: Pick<TripTargetPickerOptions, 'home' | 'away' | 'skip' | 'anchor' | 'onPick' | 'onClose'>,
+  copy: BothPlacesCopy,
+): PlacePicker {
+  const { home, away, skip } = options;
   const places: BothSheets<Place> = { home, away };
   const centres: BothSheets<LngLat> = { home: home.center, away: away.center };
   const recent: BothSheets<readonly ListedSpot[]> = {
@@ -154,14 +263,14 @@ export function openTripTargetPicker(options: TripTargetPickerOptions): PlacePic
 
   return openSearchPicker<Target, BothSheets<SpotHit[]>>({
     anchor: options.anchor,
-    heading: { lead: fromPin ? 'Measure from the pin to where?' : 'Measure to where?' },
-    line: `An address or landmark in ${home.name} or in ${away.name}.`,
+    heading: { lead: copy.lead },
+    line: copy.line,
     placeholder: PLACEHOLDER,
     rowsAre: ROWS_ARE,
     unavailable: UNAVAILABLE,
     noMatch: (query, found) =>
       found.home.length + found.away.length > 0
-        ? `Everything that matches “${query}” is where the line starts. Try another address or landmark.`
+        ? copy.allSkipped(query)
         : `No spot matches “${query}” in or near ${home.name} or ${away.name}. ${ADVICE}`,
     browse: () => listBySheet((place) => `Recent in ${place.name}`, recent),
     remote: {

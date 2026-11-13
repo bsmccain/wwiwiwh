@@ -55,6 +55,7 @@ describe('keyboard table', () => {
     ['0', 'squareUp'],
     ['s', 'toggleSlide'],
     ['m', 'toggleMeasure'],
+    ['d', 'toggleDrive'],
     ['g', 'toggleRings'],
     ['h', 'holdHideHome'],
     ['x', 'swap'],
@@ -108,7 +109,7 @@ describe('keyboard table', () => {
   describe('with single-key shortcuts switched off', () => {
     const quiet: KeyContext = { ...nowhere, singleKeys: false };
 
-    it.each(['0', 's', 'm', 'g', 'h', 'x', 'r', 'p', 'a', 'u', 'c', '1', '2', '?'])('%s on its own does nothing, with Shift or without', (key) => {
+    it.each(['0', 's', 'm', 'd', 'g', 'h', 'x', 'r', 'p', 'a', 'u', 'c', '1', '2', '?'])('%s on its own does nothing, with Shift or without', (key) => {
       expect(resolveKey(press(key), quiet)).toBeNull();
       expect(resolveKey(press(key.toUpperCase(), { shiftKey: true }), quiet)).toBeNull();
     });
@@ -144,7 +145,7 @@ describe('keyboard table', () => {
   it('lists every key once in the dialog', () => {
     const listed = SHORTCUT_GROUPS.flatMap((group) => group.entries.flatMap((entry) => entry.keys.map((chord) => chord.join('+'))));
     expect(new Set(listed).size).toBe(listed.length);
-    for (const key of ['S', 'M', 'G', 'H', 'X', 'R', 'P', 'A', 'U', 'C', '0', '1', '2', '?', 'Esc', 'Enter', '[', ']']) {
+    for (const key of ['S', 'M', 'D', 'G', 'H', 'X', 'R', 'P', 'A', 'U', 'C', '0', '1', '2', '?', 'Esc', 'Enter', '[', ']']) {
       expect(listed).toContain(key);
     }
   });

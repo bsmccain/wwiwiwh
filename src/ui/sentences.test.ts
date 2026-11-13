@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { centeredRegistration, presetPlace } from '../app/defaults';
 import { spansToText, type NearbyPlace } from '../app/readout';
-import type { Place, Trip } from '../app/types';
+import type { Drive, Place, RouteFinding, Trip } from '../app/types';
 import { defaultTripFor } from '../data/trips';
 import { destination, distanceMeters } from '../geo/distance';
-import { pinSpans, pinSpot, sameSpans, sameWords, spotLabel, spotWords, tripSpans, type NearestLookup, type Scene } from './sentences';
+import { driveSpans, pinSpans, pinSpot, sameSpans, sameWords, spotLabel, spotWords, tripSpans, type NearestLookup, type Scene } from './sentences';
 
 const sanJose = presetPlace('san-jose') as Place;
 const london = presetPlace('london') as Place;
@@ -137,6 +137,65 @@ describe('the trip sentence', () => {
       const full = tripSpans({ ...scene, trip }, nearest);
       expect(full && spansToText(full)).toMatch(/^From near Cupertino to downtown San Jose is /);
     });
+  });
+});
+
+describe('the drive in words', () => {
+  const cupertino = { lat: 37.323, lng: -122.0322 };
+  const found: RouteFinding = { status: 'found', route: { meters: 16_000, seconds: 900, line: [] } };
+  const drive: Drive = { on: 'home', from: cupertino, to: sanJose.center, match: 'time' };
+  const driven: Scene = { ...scene, trip: null, drive, route: found, reach: { status: 'found', outline: [] } };
+
+  it('is absent without a drive', () => {
+    expect(driveSpans(scene, nearest)).toBeNull();
+  });
+
+  it('names the ends by what is near them, and the spot on Away that the start lands on', () => {
+    const spans = driveSpans(driven, nearest);
+    // Cupertino lies west of downtown San Jose, so with centre pinned on centre it lands west of central London.
+    expect(spans && spansToText(spans)).toMatch(
+      /^Cupertino to downtown San Jose is 9\.9 mi \(16 km\) by road, about 15 min\. Driving that long from .+ reaches the shaded part of London\.$/,
+    );
+  });
+
+  it('prefers the names the ends were picked by', () => {
+    const named: Drive = { ...drive, fromName: 'My old house', toName: 'School' };
+    const spans = driveSpans({ ...driven, drive: named }, nearest);
+    expect(spans && spansToText(spans)).toMatch(/^My old house to School is /);
+  });
+
+  it('follows Home when it is slid: the same drive starts its reach somewhere else on Away', () => {
+    // Cupertino itself is put on Watford.
+    const slid = { overlayAnchor: cupertino, baseAnchor: watford, rotation: 0 };
+    const spans = driveSpans({ ...driven, registration: slid }, nearest);
+    expect(spans && spansToText(spans)).toMatch(/Driving that long from Watford reaches the shaded part of London\.$/);
+  });
+
+  it('reads a drive on Away the other way round: its ends on Away, its reach on Home', () => {
+    const onAway: Drive = { on: 'away', from: watford, to: london.center, match: 'distance' };
+    const pinned = { overlayAnchor: cupertino, baseAnchor: watford, rotation: 0 };
+    const spans = driveSpans({ ...driven, drive: onAway, registration: pinned }, nearest);
+    expect(spans && spansToText(spans)).toMatch(/^Watford to central London is .* Driving that far from Cupertino reaches the shaded part of San Jose\.$/);
+    expect(spans?.filter((span) => span.ink === 'home' || span.ink === 'away').map((span) => span.ink)).toEqual(['away', 'home']);
+  });
+
+  it('says it is finding the road until the road service has answered', () => {
+    const asked = driveSpans({ ...driven, route: null, reach: null }, nearest);
+    expect(asked && spansToText(asked)).toBe('Finding the road from Cupertino to downtown San Jose…');
+  });
+
+  it('calls a drive whose two ends go by the same words "This drive"', () => {
+    const short: Drive = { ...drive, from: destination(cupertino, 90, 2000), to: destination(cupertino, 270, 2000) };
+    const spans = driveSpans({ ...driven, drive: short }, nearest);
+    expect(spans && spansToText(spans)).toMatch(/^This drive is /);
+  });
+
+  it('in short, names the ends only when both have names of their own', () => {
+    const placed: Drive = { ...drive, from: destination(cupertino, 0, 3000) };
+    const short = driveSpans({ ...driven, drive: placed }, nearest, true);
+    expect(short && spansToText(short)).toMatch(/^This drive is 9\.9 mi by road, about 15 min\. Shaded on London: that long from .+\.$/);
+    const full = driveSpans({ ...driven, drive: placed }, nearest);
+    expect(full && spansToText(full)).toMatch(/^From near Cupertino to downtown San Jose is /);
   });
 });
 

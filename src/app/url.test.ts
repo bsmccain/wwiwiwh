@@ -33,6 +33,7 @@ describe('link encoding', () => {
       spots: NO_SPOTS,
       view: { center: { lat: 48.85, lng: 2.3 }, zoom: 9.75 },
       trip: { from: { lat: 37.4419, lng: -122.143 }, to: { lat: 37.3322, lng: -121.8896 } },
+      drive: null,
       rings: false,
     };
     const hash = encodeLink(state);
@@ -84,6 +85,72 @@ describe('link encoding', () => {
     const cleared: LinkState = { ...defaultLinkState(), trip: null };
     expect(encodeLink(cleared)).toBe('home=san-jose&away=london&trip=none');
     expect(decodeLink(encodeLink(cleared)).state.trip).toBeNull();
+  });
+
+  it('round-trips a drive, which stands in place of the trip', () => {
+    const drive = { on: 'home', from: { lat: 37.4419, lng: -122.143 }, to: { lat: 37.3382, lng: -121.8863 }, match: 'time' } as const;
+    const state: LinkState = { ...defaultLinkState(), trip: null, drive };
+    const hash = encodeLink(state);
+    // Home and the same time are what a drive is on and matches unless the link says otherwise.
+    expect(hash).toBe('home=san-jose&away=london&drive=37.4419,-122.143~37.3382,-121.8863');
+    const decoded = decodeLink(`#${hash}`);
+    expect(decoded.incomplete).toBe(false);
+    expect(decoded.state).toEqual(state);
+  });
+
+  it('round-trips a drive on Away with its names and what its reach matches', () => {
+    const drive = {
+      on: 'away',
+      from: { lat: 51.5308, lng: -0.1238 },
+      to: { lat: 51.47, lng: -0.4543 },
+      fromName: 'King’s Cross',
+      toName: 'Heathrow, Terminal 5',
+      match: 'distance',
+    } as const;
+    const state: LinkState = { ...defaultLinkState(), trip: null, drive };
+    const hash = encodeLink(state);
+    expect(hash).toBe(
+      'home=san-jose&away=london&drive=51.5308,-0.1238~51.47,-0.4543&on=away&df=King%E2%80%99s+Cross&dt=Heathrow,+Terminal+5&same=distance',
+    );
+    expect(decodeLink(hash).state).toEqual(state);
+  });
+
+  it('keeps a drive of a few metres, whose ends the link’s rounding has brought closer together', () => {
+    // 10 m apart as it was set; under 9 m as five decimals write it.
+    const drive = { on: 'home', from: { lat: 37.44194501, lng: -122.143 }, to: { lat: 37.44203499, lng: -122.143 }, match: 'time' } as const;
+    const { state, incomplete } = decodeLink(encodeLink({ ...defaultLinkState(), trip: null, drive }));
+    expect(incomplete).toBe(false);
+    expect(state.drive).toEqual({ ...drive, from: { lat: 37.44195, lng: -122.143 }, to: { lat: 37.44203, lng: -122.143 } });
+    expect(state.trip).toBeNull();
+  });
+
+  it('shows the drive and not a trip when a link names both', () => {
+    const { state, incomplete } = decodeLink(
+      '#home=san-jose&away=london&trip=37.4419,-122.143~37.3322,-121.8896&drive=37.4419,-122.143~37.3382,-121.8863',
+    );
+    expect(incomplete).toBe(false);
+    expect(state.trip).toBeNull();
+    expect(state.drive?.on).toBe('home');
+  });
+
+  it('falls back to the place’s own trip, and says so, when a drive cannot be understood', () => {
+    const cases = [
+      '#home=san-jose&away=london&drive=37.4419,-122.143',
+      '#home=san-jose&away=london&drive=37.4419,-122.143~37.3382,-121.8863&on=mars',
+      '#home=san-jose&away=london&drive=37.4419,-122.143~37.3382,-121.8863&same=speed',
+      // Two ends on one spot are no drive.
+      '#home=san-jose&away=london&drive=37.4419,-122.143~37.4419,-122.1430000001',
+    ];
+    for (const hash of cases) {
+      const { state, incomplete } = decodeLink(hash);
+      expect(incomplete, hash).toBe(true);
+      expect(state.home.name, hash).toBe('San Jose');
+    }
+    expect(decodeLink(cases[0] as string).state.drive).toBeNull();
+    expect(decodeLink(cases[0] as string).state.trip?.fromName).toBe('Palo Alto');
+    // What could be understood of the others still stands: the drive, on Home, matched by time.
+    expect(decodeLink(cases[1] as string).state.drive).toMatchObject({ on: 'home', match: 'time' });
+    expect(decodeLink(cases[2] as string).state.drive).toMatchObject({ on: 'home', match: 'time' });
   });
 
   it('survives names with awkward characters', () => {

@@ -6,6 +6,7 @@ import {
   centerName,
   compassWord,
   describeSpot,
+  driveSentence,
   isTurned,
   namedSpot,
   pageTitle,
@@ -14,9 +15,10 @@ import {
   tripSentence,
   turnWords,
   turnWordsSpoken,
+  type DriveWords,
   type Spot,
 } from './readout';
-import type { Place } from './types';
+import type { Place, RouteFinding } from './types';
 
 const sanJose = presetPlace('san-jose') as Place;
 const london = presetPlace('london') as Place;
@@ -170,5 +172,83 @@ describe('sentences', () => {
 
   it('titles the page after the pair', () => {
     expect(pageTitle(sanJose, london)).toBe('San Jose over London at the same scale | wwiwiwh');
+  });
+});
+
+describe('the drive sentence', () => {
+  const near = (text: string): Spot => ({ text, exact: false });
+  const found: RouteFinding = { status: 'found', route: { meters: 27_963, seconds: 1338, line: [] } };
+  const drive: DriveWords = {
+    on: 'home',
+    from: namedSpot('Palo Alto'),
+    to: namedSpot('San Jose'),
+    route: found,
+    reach: { status: 'found', outline: [] },
+    match: 'time',
+    reachFrom: near('near Rickmansworth'),
+    otherName: 'London',
+    units: 'mi',
+  };
+  const say = (words: Partial<DriveWords>): string => spansToText(driveSentence({ ...drive, ...words }));
+
+  it('gives the distance by road, the time, and how far the same time gets on the other place', () => {
+    const spans = driveSentence(drive);
+    expect(spansToText(spans)).toBe(
+      'Palo Alto to San Jose is 17.4 mi (28 km) by road, about 22 min. Driving that long from near Rickmansworth reaches the shaded part of London.',
+    );
+    expect(spans.filter((s) => s.ink).map((s) => s.ink)).toEqual(['home', 'figure', 'figure', 'away']);
+  });
+
+  it('says "that far" when the reach is matched to the distance', () => {
+    expect(say({ match: 'distance' })).toMatch(/\. Driving that far from near Rickmansworth reaches the shaded part of London\.$/);
+  });
+
+  it('letters a drive on Away in Away’s ink, and the spot its reach starts from in Home’s', () => {
+    const spans = driveSentence({ ...drive, on: 'away', from: namedSpot('King’s Cross'), to: namedSpot('Heathrow'), reachFrom: namedSpot('Sunnyvale'), otherName: 'San Jose' });
+    expect(spansToText(spans)).toMatch(/^King’s Cross to Heathrow is .* Driving that long from Sunnyvale reaches the shaded part of San Jose\.$/);
+    expect(spans.filter((s) => s.ink).map((s) => s.ink)).toEqual(['away', 'figure', 'figure', 'home']);
+  });
+
+  it('tells it briefly for a small screen', () => {
+    expect(say({ compact: true })).toBe('Palo Alto to San Jose is 17.4 mi by road, about 22 min. Shaded on London: that long from near Rickmansworth.');
+  });
+
+  it('says "From" before an end that is only placed, and "This drive" when the ends cannot be named', () => {
+    expect(say({ from: near('near Cupertino') })).toMatch(/^From near Cupertino to San Jose is /);
+    expect(say({ from: null })).toMatch(/^This drive is 17\.4 mi \(28 km\) by road, about 22 min\./);
+  });
+
+  it('starts the reach from "the same spot" when where the start lands has no name', () => {
+    expect(say({ reachFrom: null })).toMatch(/Driving that long from the same spot reaches the shaded part of London\.$/);
+  });
+
+  it('says it is asking while the road service has not answered', () => {
+    expect(say({ route: { status: 'finding' } })).toBe('Finding the road from Palo Alto to San Jose…');
+    expect(say({ route: { status: 'finding' }, to: null })).toBe('Finding the road…');
+    expect(say({ reach: { status: 'finding' } })).toMatch(/about 22 min\. Working out how far that gets on London…$/);
+    expect(say({ reach: null })).toMatch(/about 22 min\. Working out how far that gets on London…$/);
+  });
+
+  it('says so when there is no way by road, or the drive is too long to work out', () => {
+    expect(say({ route: { status: 'no-road' } })).toBe('No road joins Palo Alto and San Jose.');
+    expect(say({ route: { status: 'no-road' }, from: null })).toBe('No road joins these two spots.');
+    expect(say({ route: { status: 'too-far' } })).toBe('That drive is too long to work out: the road service stops at 932 mi (1,500 km).');
+    expect(say({ route: { status: 'too-far' }, compact: true })).toBe('That drive is too long to work out.');
+  });
+
+  it('says so when the road service does not answer, about the drive or about its reach', () => {
+    expect(say({ route: { status: 'unavailable' } })).toBe("Directions aren't answering right now. Try again.");
+    expect(say({ reach: { status: 'unavailable' } })).toMatch(/about 22 min\. How far that gets on London could not be worked out\. Try again\.$/);
+  });
+
+  it('gives the limit when the drive is more than a reach is worked out for', () => {
+    expect(say({ reach: { status: 'beyond' } })).toMatch(/\. Nothing is shaded on London: reach is only worked out for drives of up to 60 min\.$/);
+    expect(say({ reach: { status: 'beyond' }, match: 'distance' })).toMatch(/drives of up to 62\.1 mi \(100 km\)\.$/);
+    expect(say({ reach: { status: 'beyond' }, match: 'distance', units: 'km', compact: true })).toMatch(/\. No reach on London: it is only worked out up to 100 km\.$/);
+  });
+
+  it('says so when the start lands where there is no road', () => {
+    expect(say({ reach: { status: 'no-road' } })).toMatch(/\. Nothing is shaded on London: there is no road near where it starts there\.$/);
+    expect(say({ reach: { status: 'no-road' }, compact: true })).toMatch(/\. No road near its start on London\.$/);
   });
 });

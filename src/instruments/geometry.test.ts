@@ -4,12 +4,15 @@ import type { ScreenPoint } from '../map/contracts';
 import {
   arrowNudge,
   boxAround,
+  boxesOverlap,
   clipToStage,
   distanceBetween,
   edgeChipSpot,
+  nearestOnArcs,
   plaqueCenter,
   plaqueFits,
   pointAtAngle,
+  ringArcsInside,
   ringLabelSpot,
   rotatedBoxBounds,
   stepTurn,
@@ -279,6 +282,105 @@ describe('ringLabelSpot', () => {
     expect(ringLabelSpot({ x: -500, y: -500 }, 100, STAGE, INSET)).toBeNull();
     // The ring surrounds the whole stage.
     expect(ringLabelSpot(CENTER, 2000, STAGE, INSET)).toBeNull();
+  });
+});
+
+describe('ringArcsInside', () => {
+  const BOX = { x: 0, y: 0, ...STAGE };
+
+  it('is the whole ring when all of it lies inside', () => {
+    expect(ringArcsInside(CENTER, 200, BOX)).toEqual([{ from: 0, to: 360 }]);
+  });
+
+  it('is nothing when the ring surrounds the box, lies clear of it, or has no size', () => {
+    expect(ringArcsInside(CENTER, 2000, BOX)).toEqual([]);
+    expect(ringArcsInside({ x: -500, y: -500 }, 100, BOX)).toEqual([]);
+    expect(ringArcsInside(CENTER, 0, BOX)).toEqual([]);
+  });
+
+  it('is the part below the edge of a ring cut off by the top', () => {
+    const [arc, ...rest] = ringArcsInside({ x: 720, y: 100 }, 200, BOX);
+    expect(rest).toEqual([]);
+    // The ring crosses the top edge where its height above the centre is half its radius.
+    expect(arc?.from).toBeCloseTo(60, 9);
+    expect(arc?.to).toBeCloseTo(300, 9);
+  });
+
+  it('gives the stretch through straight up as two, either side of it', () => {
+    const arcs = ringArcsInside({ x: 720, y: 600 }, 400, BOX);
+    expect(arcs).toHaveLength(2);
+    expect(arcs[0]?.from).toBe(0);
+    expect(arcs[0]?.to).toBeCloseTo(121.332, 2);
+    expect(arcs[1]?.from).toBeCloseTo(238.668, 2);
+    expect(arcs[1]?.to).toBe(360);
+  });
+
+  it('finds every sliver of a ring that only shows in the corners', () => {
+    // Half the stage's diagonal is 825.6: this ring leaves by every side and comes back in at every corner.
+    const arcs = ringArcsInside(CENTER, 800, BOX);
+    expect(arcs).toHaveLength(4);
+    for (const arc of arcs) {
+      for (const degrees of [arc.from, (arc.from + arc.to) / 2, arc.to]) {
+        const point = pointAtAngle(CENTER, 800, degrees);
+        expect(point.x).toBeGreaterThanOrEqual(-1e-6);
+        expect(point.x).toBeLessThanOrEqual(STAGE.width + 1e-6);
+        expect(point.y).toBeGreaterThanOrEqual(-1e-6);
+        expect(point.y).toBeLessThanOrEqual(STAGE.height + 1e-6);
+      }
+    }
+  });
+
+  it('finds the sliver of a ring a thousand stages across, from edge to edge', () => {
+    const center = { x: -1_000_000, y: 404 };
+    const radius = 1_000_720;
+    const [arc, ...rest] = ringArcsInside(center, radius, BOX);
+    expect(rest).toEqual([]);
+    if (!arc) throw new Error('No part of the ring was found.');
+    // It runs down the middle of the stage, from the top edge to the bottom one.
+    expectPoint(pointAtAngle(center, radius, (arc.from + arc.to) / 2), { x: 720, y: 404 }, 3);
+    expect(pointAtAngle(center, radius, arc.from).y).toBeCloseTo(0, 3);
+    expect(pointAtAngle(center, radius, arc.to).y).toBeCloseTo(STAGE.height, 3);
+  });
+});
+
+describe('nearestOnArcs', () => {
+  const ARCS = [
+    { from: 20, to: 80 },
+    { from: 200, to: 350 },
+  ];
+
+  it('is the angle itself when a stretch runs through it', () => {
+    expect(nearestOnArcs(ARCS, 45)).toBe(45);
+    expect(nearestOnArcs(ARCS, 200)).toBe(200);
+    expect(nearestOnArcs(ARCS, 405)).toBe(45);
+  });
+
+  it('is the nearest end of a stretch otherwise, the short way round the ring', () => {
+    expect(nearestOnArcs(ARCS, 100)).toBe(80);
+    expect(nearestOnArcs(ARCS, 150)).toBe(200);
+    // Straight up is 10 degrees from one stretch and 20 from the other.
+    expect(nearestOnArcs(ARCS, 0)).toBe(350);
+    expect(nearestOnArcs(ARCS, 8)).toBe(20);
+  });
+
+  it('takes the two ends of a whole ring for the same spot', () => {
+    expect(nearestOnArcs([{ from: 300, to: 360 }], 0)).toBe(360);
+    expect(nearestOnArcs([{ from: 0, to: 360 }], 0)).toBe(0);
+  });
+
+  it('is nothing when nothing of the ring shows', () => {
+    expect(nearestOnArcs([], 0)).toBeNull();
+  });
+});
+
+describe('boxesOverlap', () => {
+  const box = { x: 100, y: 100, width: 60, height: 16 };
+
+  it('tells boxes that share ground from boxes that only touch or lie apart', () => {
+    expect(boxesOverlap(box, { x: 150, y: 110, width: 60, height: 16 })).toBe(true);
+    expect(boxesOverlap(box, { x: 110, y: 104, width: 10, height: 4 })).toBe(true);
+    expect(boxesOverlap(box, { x: 160, y: 100, width: 60, height: 16 })).toBe(false);
+    expect(boxesOverlap(box, { x: 100, y: 130, width: 60, height: 16 })).toBe(false);
   });
 });
 

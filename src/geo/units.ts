@@ -45,6 +45,18 @@ export function formatDistance(meters: number, units: Units): string {
   return `${formatFigure(Math.round(km))} km`;
 }
 
+/**
+ * A short human length of time, to the minute: "1 min", "22 min", "1 h", "1 h 5 min", "12 h 40 min".
+ * Never less than a minute: an estimate of a drive is not known to the second.
+ */
+export function formatDuration(seconds: number): string {
+  const minutes = Math.max(1, Math.round(Math.abs(seconds) / 60));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = formatFigure(Math.floor(minutes / 60));
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
 /** A round distance: 1, 2 or 5 times a power of ten, in the unit a road sign would give it in. */
 export interface RoundDistance {
   readonly meters: number;

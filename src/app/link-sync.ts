@@ -50,6 +50,7 @@ function linkOf(state: AppState): LinkState {
     spots: state.spots,
     view: state.view,
     trip: state.trip,
+    drive: state.drive,
     rings: state.rings,
   };
 }
@@ -58,7 +59,7 @@ function linkOf(state: AppState): LinkState {
  * Keeps the address bar describing what is on screen, and the screen following the address bar.
  *
  * - Choosing or swapping places adds a history entry.
- * - Everything else (moving the map, sliding or turning Home, the trip, rings) rewrites the current
+ * - Everything else (moving the map, sliding or turning Home, the trip, a drive, rings) rewrites the current
  *   entry once things have settled.
  * - Nothing is written until the person changes something, so a bare address stays bare.
  */
@@ -107,6 +108,7 @@ export function createLinkSync(deps: {
       next.reg !== previous.reg ||
       next.spots !== previous.spots ||
       next.trip !== previous.trip ||
+      next.drive !== previous.drive ||
       next.rings !== previous.rings ||
       next.view !== previous.view
     ) {

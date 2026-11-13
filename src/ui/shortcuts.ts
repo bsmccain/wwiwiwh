@@ -28,6 +28,7 @@ export interface KeyContext {
   readonly onMap: boolean;
   /** Focus is on a button or a link, which Enter activates. */
   readonly onControl: boolean;
+  /** Measure or Drive is on: the next end is being placed. */
   readonly measuring: boolean;
   /**
    * Keys pressed on their own (a letter, a digit, a bracket, the question mark) are listened for.
@@ -47,6 +48,7 @@ export type KeyCommand =
         | 'squareUp'
         | 'toggleSlide'
         | 'toggleMeasure'
+        | 'toggleDrive'
         | 'placeTripEnd'
         | 'toggleRings'
         | 'holdHideHome'
@@ -83,6 +85,7 @@ const ONCE: Readonly<Record<string, KeyCommand['do']>> = {
   '0': 'squareUp',
   s: 'toggleSlide',
   m: 'toggleMeasure',
+  d: 'toggleDrive',
   g: 'toggleRings',
   h: 'holdHideHome',
   x: 'swap',
@@ -177,7 +180,8 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     title: 'Distances',
     entries: [
       { keys: [['M']], does: 'Measure on or off' },
-      { keys: [['Enter']], does: 'While measuring, drop a trip end at the centre' },
+      { keys: [['D']], does: 'Drive on or off' },
+      { keys: [['Enter']], does: 'While measuring or setting a drive, drop an end at the centre' },
       { keys: [['G']], does: 'Rings on or off' },
       { keys: [['U']], does: 'Miles or kilometres' },
     ],
@@ -200,7 +204,7 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     entries: [
       { keys: [['C']], does: 'Copy link to this view' },
       { keys: [['?']], does: 'Show this list' },
-      { keys: [['Esc']], does: 'Leave Slide Home or Measure' },
+      { keys: [['Esc']], does: 'Leave Slide Home, Measure or Drive' },
     ],
   },
 ];

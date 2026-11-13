@@ -61,7 +61,7 @@ export type PinMenuRow =
   | 'Measure from the pin to an address'
   | 'Measure from the start to an address'
   | 'Put the pin at the centre of the view';
-export type ToolName = 'Slide Home' | 'Measure' | 'Rings' | 'Hide Home';
+export type ToolName = 'Slide Home' | 'Measure' | 'Drive' | 'Rings' | 'Hide Home';
 
 /**
  * Runs in the page before the app does. The app publishes itself as `window.__wwiwiwh` at the end of

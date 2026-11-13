@@ -1,7 +1,7 @@
 import { fromMercator, metersPerPixel, toMercator } from '../../geo/mercator';
 import { baseToOverlay, overlayToBase, type Registration } from '../../geo/registration';
 import type { LngLat } from '../../geo/types';
-import type { DualMap, DualMapEvents, FitOptions, MapHealth, MapStyles, MoveOptions, ScreenPoint } from '../../map/contracts';
+import { NO_DRAWING, type DualMap, type DualMapEvents, type FitOptions, type MapHealth, type MapStyles, type MoveOptions, type ScreenPoint, type Sheet, type SheetDrawing } from '../../map/contracts';
 import type { View } from '../types';
 
 type Listener<K extends keyof DualMapEvents> = (event: DualMapEvents[K]) => void;
@@ -21,6 +21,7 @@ export class FakeDualMap implements DualMap {
   homeHidden = false;
   health: MapHealth = { state: 'ok', sheets: [] };
   styles: MapStyles | null = null;
+  drawings: Record<Sheet, SheetDrawing> = { home: NO_DRAWING, away: NO_DRAWING };
   readonly calls: string[] = [];
   private readonly listeners: { [K in keyof DualMapEvents]?: Set<Listener<K>> } = {};
 
@@ -99,6 +100,9 @@ export class FakeDualMap implements DualMap {
   }
   setStyles(styles: MapStyles) {
     this.styles = styles;
+  }
+  setDrawing(sheet: Sheet, drawing: SheetDrawing) {
+    this.drawings = { ...this.drawings, [sheet]: drawing };
   }
   private get pixelsPerUnit() {
     return 512 * 2 ** this.view.zoom;

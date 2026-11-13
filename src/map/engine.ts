@@ -1,14 +1,14 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './engine.css';
 import { GPUInitializationError, MapLibreMap, setWorkerCount, setWorkerUrl } from 'maplibre-gl';
-import type { JumpToOptions, MapMovementEvent, StyleSpecification } from 'maplibre-gl';
+import type { GeoJSONSource, JumpToOptions, MapMovementEvent, StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import type { View } from '../app/types';
 import { clamp, metersPerPixel, wrapLng } from '../geo/mercator';
 import { baseToOverlay, overlayCamera, overlayToBase, zoomOffset, type Registration } from '../geo/registration';
 import type { LngLat } from '../geo/types';
-import { ZOOM_RANGE } from './contracts';
-import type { CreateDualMap, DualMap, DualMapEvents, DualMapOptions, MoveOptions, ScreenPoint, Sheet } from './contracts';
+import { NO_DRAWING, ZOOM_RANGE } from './contracts';
+import type { CreateDualMap, DualMap, DualMapEvents, DualMapOptions, MoveOptions, ScreenPoint, Sheet, SheetDrawing } from './contracts';
 import { createEmitter } from './engine-emitter';
 import {
   easeOut,
@@ -24,6 +24,7 @@ import {
 import { watchMapHealth } from './engine-recovery';
 import { BY_WHEEL_STEP, stepZoomOnWheel } from './engine-wheel';
 import { bindHomeGestures, HomeGestures } from './gestures';
+import { REACH_SOURCE_ID, ROUTE_SOURCE_ID, reachData, routeData, withDrawing } from './style/drawing';
 
 const UNAVAILABLE_MESSAGE = {
   webgl: "This browser can't draw the maps because WebGL is off. Turn on hardware acceleration or try another browser.",
@@ -106,7 +107,7 @@ function startMaps(options: DualMapOptions, awayElement: HTMLElement, homeElemen
   const base = new MapLibreMap({
     ...shared,
     container: awayElement,
-    style: options.styles.base,
+    style: withDrawing(options.styles.base, options.styles.drawing('away', 0), NO_DRAWING),
     minZoom: ZOOM_RANGE.min,
     maxZoom: ZOOM_RANGE.max,
     // Away stays flat and north-up for good, which frees twist and right-drag for turning Home.
@@ -125,7 +126,11 @@ function startMaps(options: DualMapOptions, awayElement: HTMLElement, homeElemen
     const home = new MapLibreMap({
       ...shared,
       container: homeElement,
-      style: options.styles.overlay(zoomOffset(options.registration)),
+      style: withDrawing(
+        options.styles.overlay(zoomOffset(options.registration)),
+        options.styles.drawing('home', zoomOffset(options.registration)),
+        NO_DRAWING,
+      ),
       interactive: false,
       // Home goes exactly where the registration puts it. MapLibre's own limits would clamp it
       // differently from Away at low zoom and high latitude, and the two would drift apart.
@@ -188,6 +193,8 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
   /** How many of Away's own event handlers we are inside. Away must not be redrawn from within them. */
   let awayEventDepth = 0;
   const styleLoaded: Record<Sheet, boolean> = { away: false, home: false };
+  /** What each sheet shows besides its streets. */
+  const drawings: Record<Sheet, SheetDrawing> = { away: NO_DRAWING, home: NO_DRAWING };
   const settled: Record<Sheet, boolean> = { away: false, home: false };
 
   // --- geometry ---
@@ -259,9 +266,27 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
 
   // --- styles ---
 
+  /** A sheet's style as its map is given it: with the layers of its drawing on top, and the drawing itself. */
+  function drawn(sheet: Sheet, style: StyleSpecification): StyleSpecification {
+    return withDrawing(style, styles.drawing(sheet, homeStyleOffset), drawings[sheet]);
+  }
+
   function applyStyle(sheet: Sheet, style: StyleSpecification): void {
     // A style that is still loading cannot be diffed against, so it is replaced outright.
-    mapOf(sheet).setStyle(style, { diff: styleLoaded[sheet] });
+    mapOf(sheet).setStyle(drawn(sheet, style), { diff: styleLoaded[sheet] });
+  }
+
+  /**
+   * Hands a sheet's map the drawing as it stands now. A style that is still on its way has no
+   * sources to hand it to: it was written out with the drawing of the moment, and is handed the
+   * drawing again when it has loaded.
+   */
+  function showDrawing(sheet: Sheet, changed: { route: boolean; reach: boolean }): void {
+    const map = mapOf(sheet);
+    if (!map.style) return;
+    const { route, reach } = drawings[sheet];
+    if (changed.route) map.getSource<GeoJSONSource>(ROUTE_SOURCE_ID)?.setData(routeData(route));
+    if (changed.reach) map.getSource<GeoJSONSource>(REACH_SOURCE_ID)?.setData(reachData(reach));
   }
 
   /** Rebuilds the Home style once its zoom offset has drifted from the one the style was built for. */
@@ -283,6 +308,8 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
     map.on('style.load', () => {
       styleLoaded[sheet] = true;
       styles.prepare?.(map, sheet);
+      // The style was written out before it loaded; the drawing may have changed since.
+      showDrawing(sheet, { route: true, reach: true });
     });
 
     // A sheet is settled when its last rendered frame ended idle and its camera has not moved since.
@@ -642,6 +669,13 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
     },
     getHealth: () => recovery.getHealth(),
     retry: () => recovery.retry(),
+    setDrawing(sheet, drawing) {
+      const before = drawings[sheet];
+      const changed = { route: drawing.route !== before.route, reach: drawing.reach !== before.reach };
+      if (!changed.route && !changed.reach) return;
+      drawings[sheet] = drawing;
+      showDrawing(sheet, changed);
+    },
     setStyles(next) {
       styles = next;
       homeStyleOffset = zoomOffset(registration);

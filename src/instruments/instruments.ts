@@ -4,6 +4,7 @@ import type { AppState } from '../app/types';
 import { createTextMeasurer, onFontsLoaded } from '../dom/text-width';
 import type { DualMap, ScreenBox } from '../map/contracts';
 import { drawing, html, setClass } from './dom';
+import { createDrive } from './drive';
 import { createEdgeChip } from './edge-chip';
 import { createKnob } from './knob';
 import { createMeasure } from './measure';
@@ -25,8 +26,8 @@ export interface Instruments {
   /**
    * Stage boxes that place names must keep clear of, so that names lettered above this layer never
    * cover a handle, a focus ring or a figure: the pin, the turn knob while it is up, the trip's ends
-   * and its plaque, the ring labels, the chip that points at an off-stage pin, and what measuring
-   * puts up. Lines (the rings, the trip, the turn ring) are not in it: names may lie over those.
+   * and its plaque, the drive's ends, its plaque and the labels of its rings, the ring labels, the chip that points at an
+   * off-stage pin, and what measuring puts up. Lines (the rings, the trip, the turn ring) are not in it: names may lie over those.
    */
   reservedBoxes(): readonly ScreenBox[];
   /**
@@ -35,7 +36,7 @@ export interface Instruments {
    * Returns a function that stops the calls.
    */
   onReservedChange(listener: () => void): () => void;
-  /** While measuring: drops the next trip end at the centre of the stage (for people not using a pointer on the map). */
+  /** While measuring or setting a drive: drops the next end at the centre of the stage (for people not using a pointer on the map). */
   placeTripEndAtCenter(): void;
   /** Calls back when the pin is clicked, tapped, or activated with Enter or Space, without having been dragged. Returns a function that unsubscribes. */
   onPinActivate(listener: () => void): () => void;
@@ -48,7 +49,7 @@ export interface Instruments {
  * The parts of the state the instruments draw from. `homeHidden` is deliberately not among them: the
  * pin, the rings and the trip are measurements, not Home's ink, and stay up while Home is hidden.
  */
-const DRAWN_FROM: readonly (keyof AppState)[] = ['trip', 'tripDraft', 'rings', 'units', 'mode'];
+const DRAWN_FROM: readonly (keyof AppState)[] = ['trip', 'tripDraft', 'drive', 'driveSide', 'driveDraft', 'route', 'rings', 'units', 'mode'];
 
 function sameBoxes(a: readonly ScreenBox[], b: readonly ScreenBox[]): boolean {
   return (
@@ -88,9 +89,10 @@ export function createInstruments({ container, dual, store }: InstrumentsOptions
   const knob = createKnob(context, pin.group);
   const rings = createRings(context);
   const trip = createTrip(context);
+  const drive = createDrive(context);
   const measure = createMeasure(context);
   const chip = createEdgeChip(context, () => pin.focus());
-  const parts: readonly Part[] = [pin, knob, rings, trip, measure, chip];
+  const parts: readonly Part[] = [pin, knob, rings, trip, drive, measure, chip];
 
   const reservedBoxes = (): readonly ScreenBox[] => parts.flatMap((part) => part.reserved());
 
@@ -110,7 +112,8 @@ export function createInstruments({ container, dual, store }: InstrumentsOptions
       state,
     };
     setClass(layer, 'wwiwiwh-instruments--turn-up', frame.turnUp);
-    setClass(layer, 'wwiwiwh-instruments--measure', state.mode === 'measure');
+    // Setting a drive takes presses anywhere on the map, as measuring does.
+    setClass(layer, 'wwiwiwh-instruments--measure', state.mode === 'measure' || state.mode === 'drive');
     for (const part of parts) part.layout(frame);
   }
 

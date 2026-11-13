@@ -2,8 +2,9 @@ import { METROS } from '../data/metros';
 import { distanceMeters } from '../geo/distance';
 import { normalizeDegrees } from '../geo/registration';
 import type { LngLat } from '../geo/types';
-import { formatDistance, type Units } from '../geo/units';
-import type { Place } from './types';
+import { formatDistance, formatDuration, type Units } from '../geo/units';
+import { REACH_MAX_KILOMETRES, REACH_MAX_MINUTES, ROUTE_MAX_KILOMETRES } from '../routing/valhalla';
+import type { DriveMatch, Place, ReachFinding, RouteFinding } from './types';
 
 /**
  * The words the app says about what is on screen: where a spot is, what the pin holds together,
@@ -129,6 +130,97 @@ export function tripSentence(words: TripWords): Span[] {
     );
   }
   return spans;
+}
+
+export interface DriveWords {
+  /** The place the drive is on: its ends are lettered in that place's ink, the spot its reach starts from in the other's. */
+  readonly on: 'home' | 'away';
+  /** The drive's two ends, when they can be named. */
+  readonly from: Spot | null;
+  readonly to: Spot | null;
+  readonly route: RouteFinding;
+  /** Null until there is a route to match a reach to. */
+  readonly reach: ReachFinding | null;
+  readonly match: DriveMatch;
+  /** The spot on the other place that the drive's start lands on, when it can be named. */
+  readonly reachFrom: Spot | null;
+  /** The other place's name. */
+  readonly otherName: string;
+  readonly units: Units;
+  /** Say it in as few words as possible (small screens): one unit, the reach in a few words. */
+  readonly compact?: boolean;
+}
+
+/** What is said of a drive's reach on the other place, after the sentence about the drive itself. */
+function reachWords(words: DriveWords): Span[] {
+  const other = words.otherName;
+  const amount = words.match === 'time' ? 'long' : 'far';
+  switch (words.reach?.status) {
+    case 'found': {
+      const from: Span = { text: words.reachFrom?.text ?? 'the same spot', ink: words.on === 'home' ? 'away' : 'home' };
+      return words.compact
+        ? [{ text: ` Shaded on ${other}: that ${amount} from ` }, from, { text: '.' }]
+        : [{ text: ` Driving that ${amount} from ` }, from, { text: ` reaches the shaded part of ${other}.` }];
+    }
+    case 'beyond': {
+      const limit =
+        words.match === 'time'
+          ? `${REACH_MAX_MINUTES} min`
+          : words.compact
+            ? formatDistance(REACH_MAX_KILOMETRES * 1000, words.units)
+            : bothUnits(REACH_MAX_KILOMETRES * 1000, words.units);
+      return words.compact
+        ? [{ text: ` No reach on ${other}: it is only worked out up to ` }, { text: limit, ink: 'figure' }, { text: '.' }]
+        : [{ text: ` Nothing is shaded on ${other}: reach is only worked out for drives of up to ` }, { text: limit, ink: 'figure' }, { text: '.' }];
+    }
+    case 'no-road':
+      return [{ text: words.compact ? ` No road near its start on ${other}.` : ` Nothing is shaded on ${other}: there is no road near where it starts there.` }];
+    case 'unavailable':
+      return [{ text: ` How far that gets on ${other} could not be worked out. Try again.` }];
+    default:
+      return [{ text: ` Working out how far that gets on ${other}…` }];
+  }
+}
+
+/**
+ * "Palo Alto to San Jose is 17.4 mi (28 km) by road, about 22 min. Driving that long from near
+ * Rickmansworth reaches the shaded part of London."
+ *
+ * Compact: "Palo Alto to San Jose is 17.4 mi by road, about 22 min. Shaded on London: that long
+ * from near Rickmansworth."
+ *
+ * Until the road service has answered, and when it has no route to give, the sentence says that instead.
+ */
+export function driveSentence(words: DriveWords): Span[] {
+  const { from, to, route } = words;
+  const named = from !== null && to !== null;
+  switch (route.status) {
+    case 'finding':
+      return named ? [{ text: 'Finding the road from ' }, { text: `${from.text} to ${to.text}`, ink: words.on }, { text: '…' }] : [{ text: 'Finding the road…' }];
+    case 'no-road':
+      return named ? [{ text: 'No road joins ' }, { text: `${from.text} and ${to.text}`, ink: words.on }, { text: '.' }] : [{ text: 'No road joins these two spots.' }];
+    case 'too-far': {
+      if (words.compact) return [{ text: 'That drive is too long to work out.' }];
+      const limit = bothUnits(ROUTE_MAX_KILOMETRES * 1000, words.units);
+      return [{ text: 'That drive is too long to work out: the road service stops at ' }, { text: limit, ink: 'figure' }, { text: '.' }];
+    }
+    case 'unavailable':
+      return [{ text: "Directions aren't answering right now. Try again." }];
+    case 'found': {
+      const { meters, seconds } = route.route;
+      const distance = words.compact ? formatDistance(meters, words.units) : bothUnits(meters, words.units);
+      const spans: Span[] = [];
+      if (named) {
+        // As in the trip sentence: "From near Cupertino to San Jose is…", so it does not read as a drive near Cupertino.
+        const lead = from.exact ? capitalize(from.text) : `From ${from.text}`;
+        spans.push({ text: `${lead} to ${to.text}`, ink: words.on }, { text: ' is ' });
+      } else {
+        spans.push({ text: 'This drive is ' });
+      }
+      spans.push({ text: distance, ink: 'figure' }, { text: ' by road, about ' }, { text: formatDuration(seconds), ink: 'figure' }, { text: '.' });
+      return [...spans, ...reachWords(words)];
+    }
+  }
 }
 
 /**

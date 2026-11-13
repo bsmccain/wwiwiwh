@@ -62,6 +62,10 @@ function start(root: HTMLElement): void {
     ...link.state,
     mode: 'browse',
     tripDraft: null,
+    driveSide: link.state.drive?.on ?? 'home',
+    driveDraft: null,
+    route: null,
+    reach: null,
     homeHidden: false,
     units: prefs.units,
     themeChoice: prefs.themeChoice,
@@ -274,6 +278,7 @@ function start(root: HTMLElement): void {
     focusAfter: {
       spot: () => mapCanvas.focus({ preventScroll: true }),
       trip: () => tools.button('measure').focus({ preventScroll: true }),
+      drive: () => tools.button('drive').focus({ preventScroll: true }),
     },
   });
   instruments.onPinActivate(() => pinAddress.pinActivated());
@@ -343,7 +348,8 @@ function start(root: HTMLElement): void {
   bindKeyboard({
     overlayIsOpen: () => overlays.isOpen(),
     draggingHome: () => draggingHome,
-    measuring: () => store.get().mode === 'measure',
+    // Enter drops an end at the centre for a drive as it does for a trip.
+    measuring: () => store.get().mode === 'measure' || store.get().mode === 'drive',
     singleKeys: () => store.get().shortcutsOn,
     isHandle: (target) => stage.instruments.contains(target),
     isMap: (target) => stage.maps.contains(target),

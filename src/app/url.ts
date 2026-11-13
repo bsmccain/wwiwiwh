@@ -2,9 +2,11 @@ import { defaultTripFor } from '../data/trips';
 import { clamp, MAX_MERCATOR_LAT } from '../geo/mercator';
 import { normalizeDegrees, overlayToBase } from '../geo/registration';
 import type { LngLat } from '../geo/types';
+import type { Sheet } from '../map/contracts';
 import { centeredRegistration, defaultLinkState, presetPlace } from './defaults';
+import { DEFAULT_MATCH } from './drive';
 import { nameAt, tidyName } from './spots';
-import type { LinkState, Place, Trip, View } from './types';
+import type { Drive, DriveMatch, LinkState, Place, Trip, View } from './types';
 
 /**
  * The shareable state lives in the URL hash so the site needs no server:
@@ -18,6 +20,10 @@ import type { LinkState, Place, Trip, View } from './types';
  *   &trip=37.4419,-122.143~37.3322,-121.8896           trip ends in Home coordinates ("none" = no trip)
  *   &tf=My+old+house&tt=School                          names of the trip's ends on Home
  *   &ts=Big+Ben&tl=Heathrow                             names of the Away spots the trip's start and end land on
+ *   &drive=37.4419,-122.143~37.3382,-121.8863          a drive along the roads, start ~ end, in place of a trip
+ *   &on=away                                           the place whose roads it is driven on (default: home)
+ *   &df=My+old+house&dt=School                          names of the drive's two ends
+ *   &same=distance                                     what its reach on the other place matches (default: time)
  *   &rings=0                                           distance rings off (default on)
  *
  * Anything missing or malformed falls back to its default, and `incomplete` reports that it happened.
@@ -77,7 +83,15 @@ export function encodeLink(state: LinkState): string {
   if (turn !== 0) parts.push(`turn=${turn}`);
   if (state.view) parts.push(`view=${point(state.view.center)},${num(state.view.zoom, 2)}`);
   const fallbackTrip = defaultTripFor(state.home);
-  if (!sameTrip(state.trip, fallbackTrip)) {
+  if (state.drive) {
+    // A drive stands in place of a trip, so the link says nothing about one.
+    const { on, from, to, fromName, toName, match } = state.drive;
+    parts.push(`drive=${point(from)}~${point(to)}`);
+    if (on !== 'home') parts.push(`on=${on}`);
+    if (fromName) parts.push(`df=${encodeValue(tidyName(fromName))}`);
+    if (toName) parts.push(`dt=${encodeValue(tidyName(toName))}`);
+    if (match !== DEFAULT_MATCH) parts.push(`same=${match}`);
+  } else if (!sameTrip(state.trip, fallbackTrip)) {
     parts.push(state.trip ? `trip=${point(state.trip.from)}~${point(state.trip.to)}` : 'trip=none');
     if (state.trip) {
       const { from, to, fromName, toName, fromLanding, toLanding } = state.trip;
@@ -204,6 +218,24 @@ export function decodeLink(hash: string): DecodedLink {
     fallbackTrip,
   );
 
+  const on = read<Sheet>('on', (v) => (v === 'home' || v === 'away' ? v : null), 'home');
+  const match = read<DriveMatch>('same', (v) => (v === 'time' || v === 'distance' ? v : null), DEFAULT_MATCH);
+  const drive = read<Drive | null>(
+    'drive',
+    (v) => {
+      const pair = parsePointPair(v);
+      if (!pair) return null;
+      const [from, to] = pair;
+      const fromName = name('df');
+      const toName = name('dt');
+      // Two ends on one spot are no drive, and the link was not understood. Any two that the link
+      // tells apart are one: a short drive must not be lost to the rounding of its own link.
+      if (samePoint(from, to)) return null;
+      return { on, from, to, ...(fromName ? { fromName } : {}), ...(toName ? { toName } : {}), match };
+    },
+    null,
+  );
+
   const homeSpot = name('hs');
   const awaySpot = name('as');
   return {
@@ -216,7 +248,9 @@ export function decodeLink(hash: string): DecodedLink {
         away: awaySpot ? { name: awaySpot, at: reg.baseAnchor } : null,
       },
       view,
-      trip: trip === 'none' ? null : trip,
+      // There is one journey on the map at a time, and a drive is the one that was asked for by name.
+      trip: drive || trip === 'none' ? null : trip,
+      drive,
       rings,
     },
     incomplete,

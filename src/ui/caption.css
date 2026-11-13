@@ -71,6 +71,13 @@
   background: var(--wash);
 }
 
+/* A switch that is on is reversed, like a tool that is on. */
+.caption .caption__button[aria-pressed='true'] {
+  border-color: var(--key);
+  background: var(--key);
+  color: var(--sheet);
+}
+
 /*
  * The band is lower than a full target and the collar begins right under it, so a button's target
  * is made up above it: from the foot of the row of buttons upwards, a little way over the map.
@@ -141,6 +148,18 @@
   color: color-mix(in srgb, var(--sheet) 55%, var(--key));
 }
 
+/* On the reversed band "on" is the sheet colour. One that can no longer be switched stays readable as on. */
+.caption[data-tone='loud'] .caption__button[aria-pressed='true'] {
+  border-color: var(--sheet);
+  background: var(--sheet);
+  color: var(--key);
+}
+
+.caption[data-tone='loud'] .caption__button[aria-pressed='true']:disabled {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--sheet) 55%, var(--key));
+}
+
 /* On the reversed band the focus ring is drawn in the sheet colour. */
 .caption[data-tone='loud'] :focus-visible,
 .caption[data-tone='loud'] .spot-part:focus-visible .spot-part__words {
@@ -171,6 +190,13 @@
 @media (forced-colors: active) {
   .caption {
     border-block-start-color: CanvasText;
+  }
+
+  .caption .caption__button[aria-pressed='true'] {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
   }
 
   /* The fill is gone, so a mode or a warning is marked by a heavier rule in the selection colour. */
