@@ -1,0 +1,272 @@
+/*
+ * The stage: the map pair edge to edge, the instruments above it, the place names above those.
+ * Stacking, bottom to top:
+ *
+ *   0  the map pair
+ *   1  what is printed on the map itself on narrow screens: the bar scale and a credit
+ *   2  the instruments (so the pin, a trip end or the chip that points at an off-stage pin is never
+ *      hidden behind the bar scale)
+ *   3  the place names
+ *   4  notes, buttons and the caption band
+ *   5  toasts
+ *
+ * The three layers stop where the caption band begins (--caption-floor, set per width in app.css),
+ * so the band covers no map unless its words need more lines than usual. The band lies over the
+ * stage, not below it: its height can change without the map canvases changing size.
+ *
+ * The top and bottom columns are ordinary boxes that let the pointer through to the maps; only what
+ * stands in them takes it. Keep the widths in step with collar.css and layout.ts.
+ */
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-block-size: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--sheet);
+}
+
+.stage__layer {
+  position: absolute;
+  inset: 0 0 var(--caption-floor) 0;
+}
+
+.stage__layer--maps {
+  z-index: 0;
+}
+
+/* The instruments and the names let the pointer through to the maps; only their own handles take it. */
+.stage__layer--instruments {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.stage__layer--plate {
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* --- the top: a standing note about the maps, then the one-time hint --- */
+
+.stage__top {
+  grid-row: 1;
+  display: grid;
+  justify-items: center;
+  /* On narrow screens the zoom buttons hold the top right corner; the notes are centred in what is left. */
+  padding: var(--space-2) calc(var(--target) + 3px + 2 * var(--space-2) + env(safe-area-inset-right)) 0
+    max(var(--space-2), env(safe-area-inset-left));
+  pointer-events: none;
+}
+
+.stage__top > * {
+  position: relative;
+  z-index: 4;
+  pointer-events: auto;
+}
+
+/* The lines are live regions, so they stay in the page while empty; the box only shows with a note in it. */
+.stage__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  max-inline-size: 100%;
+  border-radius: var(--radius-control);
+  background: var(--sheet);
+  color: var(--key);
+  font: var(--text-label);
+}
+
+.stage__status[data-tone] {
+  margin-block-end: var(--space-2);
+  padding: 5px 12px 6px;
+  border: 1px solid var(--key);
+}
+
+.stage__status[data-tone='down'] {
+  border-width: 1.5px;
+}
+
+.stage__status:has(.stage__retry:not([hidden])) {
+  padding-inline-end: 5px;
+}
+
+.stage__status-line {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.stage__retry {
+  position: relative;
+  min-block-size: 28px;
+  margin-inline-start: var(--space-2);
+  padding: 0 10px 1px;
+  border: 1px solid var(--rule-control);
+  border-radius: var(--radius-control);
+  font: var(--text-label);
+  white-space: nowrap;
+}
+
+.stage__retry::after {
+  content: '';
+  position: absolute;
+  inset: calc((28px - var(--target)) / 2 - 1px) -1px;
+}
+
+.stage__retry:hover {
+  background: var(--wash);
+}
+
+.stage__retry:active {
+  border-color: var(--key);
+  background: var(--key);
+  color: var(--sheet);
+}
+
+/* --- the bottom: furniture standing on the caption band --- */
+
+.stage__foot {
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  pointer-events: none;
+}
+
+.stage__furniture {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'toasts toasts'
+    'scale credit';
+  align-items: end;
+  gap: var(--space-2);
+  padding: 0 max(var(--space-2), env(safe-area-inset-right)) var(--space-2) max(var(--space-2), env(safe-area-inset-left));
+}
+
+.stage__toasts {
+  grid-area: toasts;
+  position: relative;
+  z-index: 5;
+  justify-self: center;
+}
+
+.stage__scale,
+.stage__credit {
+  position: relative;
+  z-index: 1;
+  border-radius: var(--radius-tag);
+  background: var(--sheet);
+  pointer-events: auto;
+}
+
+.stage__scale {
+  grid-area: scale;
+  justify-self: start;
+  padding: 4px 8px 1px;
+}
+
+.stage__credit {
+  grid-area: credit;
+  padding: 3px 7px 4px;
+  color: var(--key);
+  font: var(--text-credit);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* The credit is small lettering; its target reaches up and inwards to a full one. */
+.stage__credit::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 auto;
+  inline-size: max(100%, var(--target));
+  block-size: var(--target);
+}
+
+/* --- zoom buttons: top right on narrow screens, bottom right where the collar is full --- */
+
+.zoom {
+  position: absolute;
+  z-index: 4;
+  inset-block-start: var(--space-2);
+  inset-inline-end: max(var(--space-2), env(safe-area-inset-right));
+  display: grid;
+  border: 1.5px solid var(--key);
+  border-radius: var(--radius-control);
+  background: var(--sheet);
+  pointer-events: auto;
+}
+
+.zoom__button {
+  display: grid;
+  place-items: center;
+  inline-size: var(--target);
+  block-size: var(--target);
+}
+
+.zoom__button + .zoom__button {
+  border-block-start: 1px solid var(--rule-control);
+}
+
+.zoom__button:hover:not(:disabled) {
+  background: var(--wash);
+}
+
+.zoom__button:active:not(:disabled) {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+.zoom__button:disabled {
+  color: var(--ink-disabled);
+}
+
+/* --- no maps --- */
+
+.stage__unavailable {
+  grid-row: 2;
+  place-self: center;
+  max-inline-size: 34em;
+  margin: 0;
+  padding: var(--space-5);
+  font: 500 17px/1.45 var(--font-ui);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* --- where the collar is full it carries the bar scale and the credits itself --- */
+
+@media (min-width: 900px) and (min-height: 501px) {
+  .stage__top {
+    padding: var(--space-4) var(--space-4) 0;
+  }
+
+  /* The toast sits in the middle of the bottom edge whatever stands beside it. */
+  .stage__furniture {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas: '. toasts zoom';
+    gap: var(--space-3);
+    padding: 0 max(var(--space-4), env(safe-area-inset-right)) var(--space-4) max(var(--space-4), env(safe-area-inset-left));
+  }
+
+  .stage__scale,
+  .stage__credit {
+    display: none;
+  }
+
+  .zoom {
+    position: relative;
+    inset: auto;
+    grid-area: zoom;
+    justify-self: end;
+  }
+}
+
+@media (forced-colors: active) {
+  .zoom__button:disabled {
+    color: GrayText;
+  }
+}

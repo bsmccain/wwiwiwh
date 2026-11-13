@@ -1,0 +1,20 @@
+{
+  "request": "https://photon.komoot.io/api/?q=s%C3%A3o+paulo&lang=en&limit=15&include=osm.place%2Cosm.boundary.administrative%2Cosm.boundary.region%2Cosm.boundary.local_authority%2Cosm.boundary.ceremonial%2Cosm.boundary.census",
+  "features": [
+    {"properties":{"osm_type":"R","osm_id":298204,"osm_key":"place","osm_value":"state","type":"state","name":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-48.4333875,-22.0702705]}},
+    {"properties":{"osm_type":"R","osm_id":298285,"osm_key":"place","osm_value":"municipality","type":"city","name":"São Paulo","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-46.6333824,-23.5506507]}},
+    {"properties":{"osm_type":"N","osm_id":5390979124,"osm_key":"place","osm_value":"suburb","type":"district","name":"São Paulo","city":"Capanema","state":"Pará","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-47.1583944,-1.2043218]}},
+    {"properties":{"osm_type":"R","osm_id":242703,"osm_key":"place","osm_value":"municipality","type":"city","name":"São Paulo das Missões","state":"Rio Grande do Sul","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-54.936466,-28.0225895]}},
+    {"properties":{"osm_type":"R","osm_id":5349780,"osm_key":"place","osm_value":"locality","type":"locality","name":"São Paulo Botanical Garden","city":"São Paulo","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-46.6256621,-23.6414968]}},
+    {"properties":{"osm_type":"R","osm_id":5349780,"osm_key":"place","osm_value":"locality","type":"other","name":"São Paulo Botanical Garden","city":"São Paulo","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-46.6256621,-23.6414968]}},
+    {"properties":{"osm_type":"R","osm_id":301120,"osm_key":"place","osm_value":"municipality","type":"city","name":"São Paulo do Potengi","state":"Rio Grande do Norte","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-35.7648309,-5.8941684]}},
+    {"properties":{"osm_type":"R","osm_id":332507,"osm_key":"place","osm_value":"municipality","type":"city","name":"São Paulo de Olivença","state":"Amazonas","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-68.9468462,-3.4650627]}},
+    {"properties":{"osm_type":"R","osm_id":298016,"osm_key":"place","osm_value":"municipality","type":"city","name":"Agudos","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-48.9884476,-22.4719836]}},
+    {"properties":{"osm_type":"R","osm_id":2661855,"osm_key":"boundary","osm_value":"administrative","type":"other","name":"Greater São Paulo","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-46.3772544,-23.6236525]}},
+    {"properties":{"osm_type":"N","osm_id":416063847,"osm_key":"place","osm_value":"island","type":"other","name":"Saint Peter and Saint Paul Archipelago","state":"Pernambuco","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-29.345435,0.9170867]}},
+    {"properties":{"osm_type":"R","osm_id":298220,"osm_key":"place","osm_value":"municipality","type":"city","name":"Paulo de Faria","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-49.3998592,-20.029593]}},
+    {"properties":{"osm_type":"R","osm_id":297968,"osm_key":"place","osm_value":"municipality","type":"city","name":"São Bernardo do Campo","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-46.5506747,-23.7080345]}},
+    {"properties":{"osm_type":"R","osm_id":298019,"osm_key":"place","osm_value":"municipality","type":"city","name":"São José dos Campos","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-45.8854538,-23.1867782]}},
+    {"properties":{"osm_type":"R","osm_id":298344,"osm_key":"place","osm_value":"municipality","type":"city","name":"São José do Rio Preto","state":"São Paulo","country":"Brazil","countrycode":"BR"},"geometry":{"coordinates":[-49.3804212,-20.8125851]}}
+  ]
+}

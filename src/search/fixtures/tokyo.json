@@ -1,0 +1,20 @@
+{
+  "request": "https://photon.komoot.io/api/?q=Tokyo&lang=en&limit=15&include=osm.place%2Cosm.boundary.administrative%2Cosm.boundary.region%2Cosm.boundary.local_authority%2Cosm.boundary.ceremonial%2Cosm.boundary.census",
+  "features": [
+    {"properties":{"osm_type":"R","osm_id":1543125,"osm_key":"place","osm_value":"province","type":"city","name":"Tokyo","country":"Japan","countrycode":"JP"},"geometry":{"coordinates":[139.7638947,35.6768601]}},
+    {"properties":{"osm_type":"R","osm_id":17864987,"osm_key":"place","osm_value":"island","type":"other","name":"Tokyo International Airport","city":"Tokyo","country":"Japan","countrycode":"JP"},"geometry":{"coordinates":[139.7760994,35.5456924]}},
+    {"properties":{"osm_type":"R","osm_id":17864987,"osm_key":"place","osm_value":"island","type":"house","name":"Tokyo International Airport","city":"Tokyo","country":"Japan","countrycode":"JP"},"geometry":{"coordinates":[139.7760994,35.5456924]}},
+    {"properties":{"osm_type":"N","osm_id":3728940234,"osm_key":"place","osm_value":"hamlet","type":"district","name":"Tokyo","city":"Hayapuga Rural LLG","county":"Tari-Pori District","state":"Hela Province","country":"Papua New Guinea","countrycode":"PG"},"geometry":{"coordinates":[142.8381612,-5.7968777]}},
+    {"properties":{"osm_type":"W","osm_id":200489442,"osm_key":"place","osm_value":"islet","type":"other","name":"Tokyo","city":"Dubai","state":"Dubai","country":"United Arab Emirates","countrycode":"AE"},"geometry":{"coordinates":[55.1813907,25.2486123]}},
+    {"properties":{"osm_type":"N","osm_id":12328435542,"osm_key":"place","osm_value":"neighbourhood","type":"locality","name":"Tokyo","city":"Biguina-Akpassa","county":"Bassila","state":"Donga Department","country":"Benin","countrycode":"BJ"},"geometry":{"coordinates":[1.6443871,8.7782281]}},
+    {"properties":{"osm_type":"N","osm_id":13679739223,"osm_key":"place","osm_value":"village","type":"city","name":"Tokio","county":"Goilala District","state":"Central Province","country":"Papua New Guinea","countrycode":"PG"},"geometry":{"coordinates":[147.1551164,-8.4056507]}},
+    {"properties":{"osm_type":"N","osm_id":10005227954,"osm_key":"place","osm_value":"hamlet","type":"district","name":"Takyo","city":"Hiya","county":"Sangram SDO","state":"Arunachal Pradesh","country":"India","countrycode":"IN"},"geometry":{"coordinates":[93.474237,27.7755045]}},
+    {"properties":{"osm_type":"N","osm_id":7950067027,"osm_key":"place","osm_value":"hamlet","type":"district","name":"Tokyo Nunar","city":"Nuner","county":"Lar","state":"Jammu and Kashmir","country":"India","countrycode":"IN"},"geometry":{"coordinates":[74.7832489,34.2598678]}},
+    {"properties":{"osm_type":"W","osm_id":624764357,"osm_key":"place","osm_value":"square","type":"locality","name":"Tokyo Okashi Land","city":"Tokyo","country":"Japan","countrycode":"JP"},"geometry":{"coordinates":[139.7681659,35.680889]}},
+    {"properties":{"osm_type":"W","osm_id":624764355,"osm_key":"place","osm_value":"square","type":"locality","name":"Tokyo Gourmet Street","city":"Tokyo","country":"Japan","countrycode":"JP"},"geometry":{"coordinates":[139.767704,35.6806092]}},
+    {"properties":{"osm_type":"N","osm_id":10271399564,"osm_key":"place","osm_value":"square","type":"locality","name":"Tokyo Town","city":"Kuala Lumpur","country":"Malaysia","countrycode":"MY"},"geometry":{"coordinates":[101.6726324,3.0497545]}},
+    {"properties":{"osm_type":"N","osm_id":11412482060,"osm_key":"place","osm_value":"square","type":"locality","name":"Tokyo Street","city":"Kuala Lumpur","country":"Malaysia","countrycode":"MY"},"geometry":{"coordinates":[101.7146902,3.1486884]}},
+    {"properties":{"osm_type":"R","osm_id":19631009,"osm_key":"boundary","osm_value":"administrative","type":"other","name":"Tokyo 23 Wards","state":"Chiba Prefecture","country":"Japan","countrycode":"JP"},"geometry":{"coordinates":[139.7386564,35.6494917]}},
+    {"properties":{"osm_type":"R","osm_id":17007733,"osm_key":"place","osm_value":"quarter","type":"locality","name":"Toyo","city":"Tokyo","country":"Japan","countrycode":"JP"},"geometry":{"coordinates":[139.8141034,35.6706676]}}
+  ]
+}

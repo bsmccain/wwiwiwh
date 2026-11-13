@@ -1,0 +1,108 @@
+/*
+ * The type plate: the place names of both sheets, lettered once, above both map canvases.
+ * Sizes and paddings here are mirrored in type-plate.ts (LETTERING), which lays the labels out
+ * without measuring the DOM. Change them together.
+ */
+.mapz-plate {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Labels come and go many times a second while the maps move; none of it may reach the page. */
+  contain: strict;
+}
+
+.mapz-name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
+  font: 500 12.5px/1 var(--font-plate, 'Barlow Semi Condensed', 'Barlow', system-ui, sans-serif);
+  text-rendering: optimizeLegibility;
+  opacity: 0;
+  transition: opacity var(--dur-fast, 120ms) linear;
+  will-change: transform;
+}
+
+.mapz-name--on {
+  opacity: 1;
+}
+
+/* A label that has just been put on the plate fades in from nothing. */
+@starting-style {
+  .mapz-name--on {
+    opacity: 0;
+  }
+}
+
+.mapz-name--city {
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+/* Home: a boxed tag in Home's ink on the paper. */
+.mapz-name--home {
+  padding: 2.5px 5px 3px;
+  border-radius: var(--radius-tag, 2px);
+  background: var(--sheet);
+  color: var(--home);
+  font-weight: 600;
+  text-align: center;
+  /* The outline. A border would snap to whole device pixels and lose the quarter pixel. */
+  box-shadow: 0 0 0 1.25px var(--home);
+}
+
+/* Away: plain lettering, with a paper halo so Home's lines do not strike it through. */
+.mapz-name--away {
+  color: var(--away-deep);
+}
+
+/*
+ * The halo is the same word again underneath, stroked in the paper colour. One element with
+ * `paint-order: stroke` would do the same, but browsers that ignore paint-order on HTML text would
+ * then paint the stroke over the letters.
+ */
+.mapz-name--away::before {
+  content: attr(data-name);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  color: var(--sheet);
+  /* Centred on the outline of the letters, so the halo reaches 2px beyond them. */
+  -webkit-text-stroke: 4px var(--sheet);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapz-name {
+    transition: none;
+  }
+}
+
+/*
+ * A contrast theme replaces the inks and drops box-shadows, but leaves the map canvases as they are.
+ * So each name carries its own plate in the system's colours: Home keeps its box as an outline, and
+ * Away's halo becomes a plain plate that reaches as far as the halo did. (Left to itself the halo's
+ * stroke is recoloured as lettering and sticks out at both ends of the word.)
+ */
+@media (forced-colors: active) {
+  .mapz-name--home,
+  .mapz-name--away {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .mapz-name--home {
+    outline: 1.25px solid CanvasText;
+  }
+
+  .mapz-name--away {
+    outline: 2px solid Canvas;
+  }
+
+  .mapz-name--away::before {
+    content: none;
+  }
+}

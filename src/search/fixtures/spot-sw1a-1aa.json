@@ -1,0 +1,6 @@
+{
+  "request": "https://photon.komoot.io/api/?q=SW1A+1AA&lang=en&limit=15&lat=51.5073&lon=-0.1276&bbox=-2.293%2C50.160%2C2.037%2C52.855",
+  "features": [
+    {"properties":{"osm_key":"place","osm_value":"postcode","type":"other","name":"SW1A 1AA","district":"Westminster","city":"London","state":"England","country":"United Kingdom","countrycode":"GB"},"geometry":{"coordinates":[-0.1417955,51.50133745]}}
+  ]
+}

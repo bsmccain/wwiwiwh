@@ -1,0 +1,93 @@
+/*
+ * Short-lived notes on the stage: toasts on its bottom edge, the one-time hint at its top. Sheet
+ * ground with a key outline, like the popovers: nothing floats on a shadow.
+ */
+.toasts {
+  display: grid;
+  justify-items: center;
+}
+
+.toasts__region {
+  grid-area: 1 / 1;
+}
+
+.toast {
+  margin: 0;
+  padding: 8px 14px 9px;
+  border: 1.5px solid var(--key);
+  border-radius: var(--radius-control);
+  background: var(--sheet);
+  color: var(--key);
+  font: var(--text-label);
+  text-align: center;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+  animation: note-rise var(--dur-fast) var(--ease);
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-inline-size: min(440px, 100%);
+  padding: 3px 3px 3px 12px;
+  border: 1.5px solid var(--key);
+  border-radius: var(--radius-control);
+  background: var(--sheet);
+  color: var(--key);
+  animation: note-rise var(--dur) var(--ease);
+}
+
+/* Stepped aside: it would cover the pin or the trip, or something is open over the page. It keeps its place. */
+.hint--aside {
+  visibility: hidden;
+}
+
+.hint__text {
+  /* A long place name with no spaces breaks instead of pushing Close out of the box. */
+  min-inline-size: 0;
+  margin: 0;
+  padding-block: 5px 6px;
+  font: var(--text-label);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.hint__close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-block-size: var(--target);
+  padding: 0 10px 0 6px;
+  border-radius: var(--radius-control);
+  font: var(--text-label);
+}
+
+.hint__close .icon {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.hint__close:hover {
+  background: var(--wash);
+}
+
+.hint__close:active {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+@keyframes note-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .hint {
+    animation: none;
+  }
+}

@@ -1,0 +1,225 @@
+/*
+ * Dialogs in the sheet style: sheet ground, key outline, no shadow. The page behind is veiled with
+ * the sheet colour, as it is behind the picker's bottom sheet.
+ */
+.dialog {
+  inline-size: min(680px, calc(100vw - 2 * var(--space-3)));
+  max-inline-size: none;
+  max-block-size: min(720px, calc(100dvh - 2 * var(--space-3)));
+  padding: 0;
+  border: 1.5px solid var(--key);
+  border-radius: var(--radius-control);
+  background: var(--sheet);
+  color: var(--key);
+  font: var(--text-body);
+  overflow: hidden;
+}
+
+.dialog[open] {
+  display: grid;
+}
+
+.dialog--about {
+  inline-size: min(560px, calc(100vw - 2 * var(--space-3)));
+}
+
+.dialog::backdrop {
+  background: var(--veil);
+}
+
+.dialog__sheet {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-block-size: 0;
+  max-block-size: inherit;
+}
+
+.dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+  border-block-end: 1px solid var(--rule);
+}
+
+.dialog__title {
+  margin: 0;
+  font: var(--text-place);
+  overflow-wrap: anywhere;
+}
+
+.dialog__close {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: var(--target);
+  padding: 0 var(--space-3) 1px var(--space-2);
+  border-radius: var(--radius-control);
+  font: var(--text-label);
+}
+
+.dialog__close .icon {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.dialog__close:hover {
+  background: var(--wash);
+}
+
+.dialog__close:active {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+/* The body takes focus so that the arrow keys, Page Down and End scroll it when it does not fit. */
+.dialog__body {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dialog__body:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.dialog__body p {
+  margin: 0 0 var(--space-3);
+}
+
+.dialog__body a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* --- keyboard shortcuts: two columns of groups --- */
+
+.keys__note {
+  color: var(--key-2);
+  font: var(--text-label);
+  font-weight: 400;
+}
+
+.keys {
+  columns: 2;
+  column-gap: var(--space-6);
+}
+
+.keys__group {
+  break-inside: avoid;
+  margin-block-end: var(--space-4);
+}
+
+.keys__title {
+  margin: 0 0 var(--space-1);
+  padding-block-end: var(--space-1);
+  border-block-end: 1px solid var(--rule);
+  font: var(--text-label);
+  font-weight: 600;
+}
+
+.keys__list {
+  display: grid;
+  margin: 0;
+}
+
+.keys__row {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--space-3);
+  padding-block: 5px;
+}
+
+.keys__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.keys__chord {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.keys__cap {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-inline-size: 23px;
+  min-block-size: 23px;
+  padding: 0 5px 1px;
+  border: 1px solid var(--key);
+  border-radius: var(--radius-control);
+  background: var(--sheet);
+  font: var(--text-tool);
+  font-family: var(--font-plate);
+  font-weight: 600;
+}
+
+.keys__plus {
+  color: var(--key-2);
+  font: var(--text-tool);
+}
+
+.keys__does {
+  margin: 0;
+  font: var(--text-sentence);
+}
+
+/* --- about --- */
+
+.about__lead {
+  font: var(--text-body);
+}
+
+.about__promise {
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: 2px solid var(--key);
+  background: var(--wash);
+  font-weight: 500;
+}
+
+.about__heading {
+  margin: var(--space-5) 0 var(--space-2);
+  padding-block-end: var(--space-1);
+  border-block-end: 1px solid var(--rule);
+  font: var(--text-label);
+  font-weight: 600;
+}
+
+.about__credits {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  color: var(--key-2);
+  font: var(--text-sentence);
+  list-style: none;
+}
+
+@media (forced-colors: active) {
+  .dialog__close:active {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+@media (max-width: 599.98px) {
+  .keys {
+    columns: 1;
+  }
+
+  .dialog__head {
+    padding-inline-start: var(--space-4);
+  }
+
+  .dialog__body {
+    padding: var(--space-3) var(--space-4) var(--space-4);
+  }
+}

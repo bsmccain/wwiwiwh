@@ -1,0 +1,180 @@
+/*
+ * The caption band, on the bottom edge of the stage: one message and the buttons that go with it.
+ *
+ * Quiet (what is drawn on the map): sheet ground and key text under a thin rule, so it reads as the
+ * upper edge of the collar. Loud (a mode or a warning): reversed, key ground and sheet text.
+ *
+ * It is never shorter than --caption-floor, where the map layers end, and grows upwards over the
+ * map when its words need more lines than that.
+ */
+.caption {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  align-content: center;
+  min-block-size: var(--caption-floor);
+  padding: 0 max(var(--space-3), env(safe-area-inset-right)) 0 max(var(--space-3), env(safe-area-inset-left));
+  border-block-start: 1px solid var(--key);
+  background: var(--sheet);
+  color: var(--key);
+  pointer-events: auto;
+}
+
+/*
+ * On a phone held upright the buttons stand in the top corner and the sentence runs round them, so
+ * its last line has the full width: a line fewer than with the buttons in a column of their own.
+ */
+.caption__body {
+  display: flow-root;
+  min-inline-size: 0;
+}
+
+.caption__text {
+  margin: 0;
+  padding-block: 8px 9px;
+  font: var(--text-sentence);
+  overflow-wrap: anywhere;
+}
+
+/*
+ * The padding of an inline box takes no room in the lines, which lets a spot of the pin sentence
+ * answer the pointer over a full target without moving the text: one line up from its words, and
+ * down by whatever is then still missing. No further up than a line, or a spot on the second line
+ * would be the one to answer just above the words of the first.
+ */
+.caption .spot-part {
+  padding-block: 1lh max(0px, calc(var(--target) - 1lh - 1em));
+}
+
+.caption__actions {
+  --actions-inset: 3px;
+
+  float: inline-end;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  max-inline-size: 100%;
+  margin: var(--space-1) 0 0 var(--space-3);
+  padding-block: var(--actions-inset);
+}
+
+.caption__button {
+  --mini-size: 30px;
+
+  font: var(--text-label);
+}
+
+/* The button whose picker is open is outlined in full, like the legend row whose picker is. */
+.caption__button[aria-expanded='true'] {
+  border-color: var(--key);
+  background: var(--wash);
+}
+
+/*
+ * The band is lower than a full target and the collar begins right under it, so a button's target
+ * is made up above it: from the foot of the row of buttons upwards, a little way over the map.
+ */
+.caption__button::after {
+  inset-block: calc(var(--mini-size) + var(--actions-inset) - 1px - var(--target)) calc(-1px - var(--actions-inset));
+}
+
+/* From here the sentence has a line to itself and the buttons stand beside it, in the middle of the band's height. */
+@media (min-width: 480px) {
+  .caption__body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0 var(--space-3);
+  }
+
+  .caption__text {
+    flex: 1 1 14em;
+    min-inline-size: 0;
+  }
+
+  .caption__actions {
+    flex: 0 1 auto;
+    order: 1;
+    margin: 0;
+  }
+}
+
+/* --- loud: a mode or a warning --- */
+
+.caption[data-tone='loud'] {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+.caption[data-tone='loud'] .ink--home {
+  color: var(--home-on-key);
+}
+
+.caption[data-tone='loud'] .ink--away {
+  color: var(--away-on-key);
+}
+
+.caption[data-tone='loud'] .caption__button {
+  border-color: var(--rule-on-key);
+}
+
+.caption[data-tone='loud'] .caption__button:hover:not(:disabled) {
+  background: var(--wash-on-key);
+}
+
+.caption[data-tone='loud'] .caption__button[aria-expanded='true'] {
+  border-color: var(--sheet);
+  background: var(--wash-on-key);
+}
+
+.caption[data-tone='loud'] .caption__button:active:not(:disabled) {
+  border-color: var(--sheet);
+  background: var(--sheet);
+  color: var(--key);
+}
+
+.caption[data-tone='loud'] .caption__button:disabled {
+  border-color: color-mix(in srgb, var(--sheet) 25%, transparent);
+  /* Dimmed, but still readable (4:1 on the band). */
+  color: color-mix(in srgb, var(--sheet) 55%, var(--key));
+}
+
+/* On the reversed band the focus ring is drawn in the sheet colour. */
+.caption[data-tone='loud'] :focus-visible,
+.caption[data-tone='loud'] .spot-part:focus-visible .spot-part__words {
+  outline-color: var(--sheet);
+}
+
+/* A fainter wash than the buttons get: over it Home's tint has to keep 4.5:1 on the dark theme's band too (it measures 4.7:1). */
+.caption[data-tone='loud'] .spot-part:hover .spot-part__words,
+.caption[data-tone='loud'] .spot-part[aria-expanded='true'] .spot-part__words {
+  background: color-mix(in srgb, var(--sheet) 10%, transparent);
+}
+
+.caption[data-tone='loud'] .spot-part:active .spot-part__words {
+  background: var(--sheet);
+  color: var(--key);
+}
+
+@media (pointer: coarse) {
+  .caption__actions {
+    --actions-inset: 2px;
+  }
+
+  .caption__button {
+    --mini-size: 32px;
+  }
+}
+
+@media (forced-colors: active) {
+  .caption {
+    border-block-start-color: CanvasText;
+  }
+
+  /* The fill is gone, so a mode or a warning is marked by a heavier rule in the selection colour. */
+  .caption[data-tone='loud'] {
+    border-block-start: 3px solid Highlight;
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "note": "lat, lon, zoom and location_bias_scale are all accepted next to bbox.",
+  "request": "https://photon.komoot.io/api/?q=10+downing&lang=en&limit=15&lat=51.5074&lon=-0.1278&bbox=-2.293%2C50.160%2C2.037%2C52.855&zoom=10&location_bias_scale=0.2",
+  "status": 200,
+  "names": [
+    "10 Downing Street",
+    "10 Downing Road",
+    "Kullisse Downing Street No. 10 (The Crown)",
+    "Over the Moon Tattoo",
+    "John Lewis",
+    "Tapi Carpets",
+    "Downing House",
+    "10 Downing Mews",
+    "10¼ Downing Street (Dinky Door 4)",
+    "10 Downing Street",
+    "8-10 Downing Close",
+    "The Downings"
+  ]
+}

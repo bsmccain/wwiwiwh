@@ -1,0 +1,6 @@
+{
+  "note": "Nothing found is an HTTP 200 with no features.",
+  "request": "https://photon.komoot.io/api/?q=xqzvwk+plomb&lang=en&limit=15&lat=51.5074&lon=-0.1278&bbox=-2.293%2C50.160%2C2.037%2C52.855",
+  "status": 200,
+  "names": []
+}

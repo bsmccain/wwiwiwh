@@ -1,0 +1,330 @@
+/*
+ * The menus (More, and the pin's own): a popover on wide screens, a bottom sheet on phones, in the
+ * same dress as the pickers (src/search/picker.css): sheet ground, key outline, no shadow.
+ */
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  color: var(--key);
+  font: var(--text-body);
+  pointer-events: none; /* the popover leaves the page around it usable */
+}
+
+.menu__scrim {
+  display: none;
+}
+
+.menu__panel {
+  position: fixed;
+  display: grid;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--sheet);
+  pointer-events: auto;
+  outline: none;
+}
+
+/* Rising from the collar, lined up with the right edge of its button. */
+.menu[data-layout='popover'][data-place='rising'] .menu__panel {
+  inset-block-end: var(--menu-bottom);
+  inset-inline-end: var(--menu-right);
+}
+
+/* Beside what it belongs to. Physical sides: the spot is worked out in screen pixels (popover-place.ts). */
+.menu[data-layout='popover'][data-place='beside'] .menu__panel {
+  top: var(--menu-top);
+  left: var(--menu-left);
+}
+
+.menu[data-layout='popover'] .menu__panel {
+  inline-size: 324px;
+  max-inline-size: calc(100vw - 2 * var(--space-3));
+  max-block-size: var(--menu-max-height);
+  padding: var(--space-2);
+  border: 1.5px solid var(--key);
+  border-radius: var(--radius-control);
+  animation: menu-rise var(--dur-fast) var(--ease);
+}
+
+.menu[data-layout='sheet'] {
+  pointer-events: auto; /* modal: the rest of the page waits */
+}
+
+.menu[data-layout='sheet'] .menu__scrim {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: var(--veil);
+}
+
+.menu[data-layout='sheet'] .menu__panel {
+  inset: auto 0 0;
+  max-block-size: 85dvh;
+  padding: var(--space-2) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom));
+  border-block-start: 2px solid var(--key); /* the collar's neatline, one level up */
+  /* A finger can pull the sheet down to put it away; let go early and it settles back. */
+  transform: translateY(var(--sheet-drag, 0px));
+  transition: transform var(--dur) var(--ease);
+  animation: menu-slide var(--dur) var(--ease);
+}
+
+.menu[data-layout='sheet'] .menu__panel[data-dragging] {
+  transition: none;
+}
+
+.menu[data-layout='sheet'] .menu__panel::before {
+  content: '';
+  position: absolute;
+  inset: 3px 0 auto;
+  border-block-start: 1px solid var(--rule);
+}
+
+/* The popover is named by its button; only the sheet shows a heading and a way out. */
+.menu__head {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  min-block-size: var(--target);
+}
+
+.menu[data-layout='sheet'] .menu__head {
+  display: flex;
+}
+
+.menu__title {
+  margin: 0;
+  padding-inline-start: var(--space-2);
+  font: var(--text-place);
+}
+
+.menu__close {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: var(--target);
+  margin-inline-end: calc(-1 * var(--space-2));
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  font: var(--text-label);
+}
+
+.menu__close .icon {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: var(--target);
+  padding: 5px var(--space-2) 6px;
+  border-radius: var(--radius-control);
+  text-align: start;
+}
+
+.menu__item-text {
+  display: grid;
+  min-inline-size: 0;
+}
+
+/*
+ * A row led by an ink swatch or an icon. Both stand in a column of one width, so that the words of
+ * every such row begin on the same line down the menu.
+ */
+.menu__swatch {
+  flex: none;
+  inline-size: 30px;
+  block-size: 15px;
+}
+
+.menu__item--led > .icon {
+  margin-inline: 4px;
+}
+
+/* The spot of a sheet that the pin holds, in that sheet's ink (the colour comes from .ink--home and .ink--away). */
+.menu__item-spot {
+  font: var(--text-body);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.menu__rule {
+  inline-size: 100%;
+  margin: var(--space-1) 0;
+  border: 0;
+  border-block-start: 1px solid var(--rule);
+}
+
+.menu__item-word {
+  font: var(--text-body);
+  font-weight: 500;
+}
+
+.menu__item-note {
+  color: var(--key-2);
+  font: var(--text-tool);
+}
+
+:is(.menu__item, .menu__close):hover {
+  background: var(--wash);
+}
+
+.menu__item:active:not(:disabled) {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+.menu__item:active:not(:disabled) .menu__item-note {
+  color: inherit;
+}
+
+/* On the reversed row the two inks go by their tints for a key ground. */
+.menu__item:active:not(:disabled) .ink--home {
+  color: var(--home-on-key);
+}
+
+.menu__item:active:not(:disabled) .ink--away {
+  color: var(--away-on-key);
+}
+
+.menu__item:disabled {
+  color: var(--ink-disabled);
+}
+
+.menu__item:disabled .menu__item-note {
+  color: inherit;
+}
+
+.menu__group {
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  border: 0;
+  border-block-start: 1px solid var(--rule);
+}
+
+.menu__group + .menu__item {
+  position: relative;
+  margin-block-start: var(--space-1);
+}
+
+/* The rule that closes the last group. */
+.menu__group + .menu__item::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--space-1) - 1px) 0 auto;
+  border-block-start: 1px solid var(--rule);
+}
+
+/* Floated, a legend is laid out as an ordinary block instead of breaking the fieldset's top rule. */
+.menu__legend {
+  float: inline-start;
+  inline-size: 100%;
+  padding: 0;
+  margin-block-end: 6px;
+  color: var(--key-2);
+  font: var(--text-label);
+}
+
+/* A line under a group that says what its choice does. */
+.menu__note {
+  margin: 6px 0 0;
+  color: var(--key-2);
+  font: var(--text-tool);
+  font-weight: 400;
+}
+
+/* One control made of radio buttons: the chosen one is reversed. */
+.choice {
+  clear: both;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  border: 1px solid var(--key);
+  border-radius: var(--radius-control);
+}
+
+.choice__option {
+  position: relative;
+  display: grid;
+  cursor: pointer;
+}
+
+.choice__option + .choice__option {
+  border-inline-start: 1px solid var(--key);
+}
+
+.choice__input {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.choice__word {
+  display: grid;
+  place-items: center;
+  min-block-size: var(--target);
+  padding: 0 var(--space-1) 1px;
+  font: var(--text-label);
+  text-align: center;
+}
+
+.choice__option:hover .choice__word {
+  background: var(--wash);
+}
+
+.choice__input:checked + .choice__word {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+.choice__input:focus-visible + .choice__word {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@keyframes menu-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes menu-slide {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu[data-layout] .menu__panel {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* A contrast theme drops the fill that marks the chosen option; the system's selection colours stand in. */
+@media (forced-colors: active) {
+  .choice__input:checked + .choice__word,
+  .menu__item:active:not(:disabled) {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .menu__item:active:not(:disabled) :is(.ink--home, .ink--away) {
+    color: inherit;
+  }
+
+  .menu__item:disabled {
+    color: GrayText;
+  }
+}

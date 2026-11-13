@@ -1,0 +1,918 @@
+/*
+ * The collar: the margin of the printed sheet. Opaque sheet colour, separated from the map by a
+ * neatline (a 2px key rule with a 1px rule 3px below it). Three arrangements:
+ *
+ *   under 900px     two rows of large targets: the two place chips with Swap between them, then six
+ *                   tools. The bar scale and the credit move onto the map, the pin sentence into the
+ *                   caption, and slide mode puts its own buttons in place of the tools. Screens no
+ *                   taller than 500px get this arrangement too, however wide (a phone on its side, a
+ *                   small window zoomed in), and from 600px wide it is laid out in a single row.
+ *   900 to 1099px   two rows: legend, bar scale and pin; then the tools, sharing and the credits.
+ *   1100px and up   everything in one row, about 100px tall. It shows more as it widens: the pin
+ *                   sentence from 1280px, the places' contexts and the long name of Copy link from 1536px.
+ *
+ * Nothing here has a fixed height that could cut text off: rows have minimum heights and grow when
+ * the type is set looser. Section widths are budgeted per breakpoint (--legend-place-room,
+ * --scale-room, --tool-size); change one and the breakpoints must be checked.
+ *
+ * Keep the conditions (900px, 1100px, 1280px wide; more than 500px tall) in step with layout.ts and stage.css.
+ */
+.collar {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 2px;
+  padding: 9px max(var(--space-2), env(safe-area-inset-right)) calc(3px + env(safe-area-inset-bottom))
+    max(var(--space-2), env(safe-area-inset-left));
+  border-block-start: 2px solid var(--key);
+  background: var(--sheet);
+  color: var(--key);
+}
+
+.collar::before {
+  content: '';
+  position: absolute;
+  inset: 3px 0 auto;
+  border-block-start: 1px solid var(--rule);
+  pointer-events: none;
+}
+
+/* The two groups only matter where the collar breaks into two rows. */
+.collar__group {
+  display: contents;
+}
+
+.collar button:disabled {
+  color: var(--ink-disabled);
+}
+
+/* --- legend: which ink is which place, and the way to change it --- */
+
+.legend {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--target) minmax(0, 1fr);
+  align-items: center;
+}
+
+.legend__row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: var(--space-2);
+  min-block-size: 48px;
+  padding: 0 10px 1px 9px;
+  border: 1px solid var(--rule-control);
+  border-radius: var(--radius-control);
+  text-align: start;
+}
+
+/* Hover rules are written with :where() so that they never outrank what a control looks like while on or held. */
+:where(.legend__row, .legend__swap):hover:where(:not(:disabled)) {
+  background: var(--wash);
+}
+
+/* The row whose picker is open is outlined, not reversed: its swatch has to keep its ink. */
+.legend__row[aria-expanded='true'] {
+  background: var(--wash);
+  box-shadow: inset 0 0 0 1.5px var(--key);
+}
+
+.legend__swatch {
+  grid-row: 1 / span 2;
+  align-self: center;
+  inline-size: 30px;
+  block-size: 15px;
+}
+
+.legend__role {
+  color: var(--key-2);
+  font: var(--text-credit);
+  font-weight: 500;
+}
+
+.legend__place {
+  min-inline-size: 0;
+}
+
+.legend__name {
+  display: block;
+  overflow: hidden;
+  font: var(--text-body);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* With the map tools off the places are still what the page is about: their names stay in full ink. */
+.legend__row:disabled .legend__name {
+  color: var(--key);
+}
+
+.legend__context,
+.legend__chevron {
+  display: none;
+}
+
+.legend__swap {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  min-block-size: 48px;
+  border-radius: var(--radius-control);
+  font: var(--text-credit);
+  font-weight: 500;
+}
+
+/* Side by side, the two places change places sideways. */
+.legend__swap .icon {
+  transform: rotate(90deg);
+}
+
+/* The swatches: a piece of each map as it is printed. */
+.swatch {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.swatch__home-major {
+  stroke: var(--home);
+  stroke-width: 3;
+}
+
+.swatch__home-minor {
+  stroke: var(--home);
+  stroke-width: 1;
+}
+
+.swatch__away-land {
+  fill: color-mix(in srgb, var(--away) 9%, var(--sheet));
+}
+
+.swatch__away-water {
+  fill: color-mix(in srgb, var(--away) 26%, var(--sheet));
+}
+
+.swatch__away-major {
+  stroke: var(--away);
+  stroke-width: 1.8;
+}
+
+.swatch__away-minor {
+  stroke: var(--away);
+  stroke-width: 0.8;
+  opacity: 0.6;
+}
+
+/* The narrowest phones: a slimmer swatch leaves a twelve-letter name its room. */
+@media (max-width: 399.98px) {
+  .legend__row {
+    grid-template-columns: 22px minmax(0, 1fr);
+    column-gap: 6px;
+    padding-inline: 7px;
+  }
+
+  .legend__swatch {
+    inline-size: 22px;
+    block-size: 11px;
+  }
+}
+
+/* --- sections that only wide screens have room for --- */
+
+.scale,
+.pin,
+.slide-tools,
+.share__credits,
+.share__copy-long {
+  display: none;
+}
+
+/* --- tools, and on narrow screens Copy link and More beside them as two more of the same --- */
+
+.tools {
+  grid-column: 1 / span 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.share {
+  grid-column: 5 / span 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.tool,
+.share__copy,
+.share__more {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 3px;
+  min-block-size: 56px;
+  padding: 7px 1px 4px;
+  border-radius: var(--radius-control);
+  font: var(--text-tool);
+  text-align: center;
+}
+
+:where(.tool, .share__copy, .share__more):hover:where(:not(:disabled)) {
+  background: var(--wash);
+}
+
+/* "On" is reversed: key fill, sheet text. So is a button while it is held down. */
+.tool[aria-pressed='true']:not(:disabled),
+.tool.is-held,
+.share__more[aria-expanded='true'],
+:is(.tool, .share__copy, .share__more):active:not(:disabled) {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+/* The tools that act on Home alone carry Home's ink in their icon. */
+.tool--home:not([aria-pressed='true'], .is-held, :active, :disabled) .icon {
+  color: var(--home);
+}
+
+/*
+ * On the narrowest phones a two-word name does not fit on one line in a sixth of the width. There
+ * every two-word name takes two lines, so the row does not mix names that fit with names that wrap.
+ */
+@media (max-width: 429.98px) {
+  .tool__word,
+  .share__copy-short {
+    max-inline-size: min-content;
+  }
+}
+
+/* --- slide mode on narrow screens: its own buttons take the place of the tools --- */
+
+@media (max-width: 899.98px), (max-height: 500.98px) {
+  .collar[data-mode='slide'] :is(.tools, .share) {
+    display: none;
+  }
+
+  .collar[data-mode='slide'] .slide-tools {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+  }
+
+  /* Seven 48px targets need the whole width of the smallest phones, so there the gaps go. */
+  @media (max-width: 374.98px) {
+    .collar[data-mode='slide'] .slide-tools {
+      gap: 0;
+    }
+  }
+
+  /* Done is the way out of the mode: the one filled button of the row. */
+  .tool--done {
+    align-content: center;
+    background: var(--key);
+    color: var(--sheet);
+    font-weight: 600;
+  }
+
+  .tool--done:hover {
+    background: color-mix(in srgb, var(--key) 86%, var(--sheet));
+  }
+
+  .tool.tool--done:active {
+    background: var(--sheet);
+    color: var(--key);
+    box-shadow: inset 0 0 0 1.5px var(--key);
+  }
+}
+
+/* --- a phone on its side: the same pieces in one row, to leave the map what little height there is --- */
+
+@media (min-width: 600px) and (max-height: 500.98px) {
+  .collar {
+    --tool-size: 54px;
+
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .legend {
+    flex: 1 1 0;
+    min-inline-size: 0;
+  }
+
+  .tools,
+  .share,
+  .collar[data-mode='slide'] .slide-tools {
+    flex: none;
+    grid-auto-columns: var(--tool-size);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+  }
+
+  /* Until there is room for them again, the chips go without their swatches: the role word still says which is which. */
+  .legend__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .legend__swatch {
+    display: none;
+  }
+}
+
+@media (min-width: 740px) and (max-height: 500.98px) {
+  .collar {
+    --tool-size: 64px;
+  }
+
+  .legend__row {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .legend__swatch {
+    display: block;
+  }
+}
+
+/* --- 900px and up, and tall enough: the full collar, here in two rows --- */
+
+@media (min-width: 900px) and (min-height: 501px) {
+  .collar {
+    --section-pad: var(--space-3);
+    --legend-place-room: 148px;
+    --legend-context: none;
+    --legend-swatch: 36px;
+    --scale-room: 180px;
+
+    /* Two legend rows of full target height and the section padding: 98px with a mouse, 114px under a finger. */
+    --collar-row: calc(2 * var(--target) + 18px);
+
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(var(--collar-row), auto) auto;
+    gap: 0;
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  .collar__group--about {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .collar__group--doing {
+    display: flex;
+    align-items: stretch;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .collar__section {
+    min-inline-size: 0;
+    padding: 9px var(--section-pad) 5px;
+  }
+
+  .collar__section + .collar__section {
+    border-inline-start: 1px solid var(--rule);
+  }
+
+  /* legend: two rows, ink swatch, role, place, with Swap standing beside both */
+
+  .legend {
+    grid-column: auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: repeat(2, minmax(var(--target), auto));
+    align-content: center;
+    column-gap: 6px;
+    padding-inline: var(--space-2) 10px;
+  }
+
+  .legend__row {
+    grid-column: 1;
+    grid-template-columns: var(--legend-swatch) 38px minmax(0, 1fr) 12px;
+    grid-template-rows: auto;
+    align-items: center;
+    column-gap: 7px;
+    min-block-size: var(--target);
+    padding: 0 6px 1px;
+    border: 0;
+  }
+
+  .legend__row--home {
+    grid-row: 1;
+  }
+
+  .legend__row--away {
+    grid-row: 2;
+  }
+
+  .legend__swatch {
+    grid-row: auto;
+    inline-size: var(--legend-swatch);
+    block-size: calc(var(--legend-swatch) / 2);
+  }
+
+  .legend__role {
+    font: var(--text-label);
+  }
+
+  /*
+   * The name and, when there is room for all of it, its context on one line. A context that does
+   * not fit wraps to a second line, which the one-line height cuts off: it is shown whole or not at all.
+   */
+  .legend__place {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 7px;
+    max-inline-size: var(--legend-place-room);
+    max-block-size: 1lh;
+    overflow: hidden;
+    font: var(--text-place);
+    line-height: 1.3;
+  }
+
+  .legend__name {
+    max-inline-size: 100%;
+    font: inherit;
+  }
+
+  .legend__context {
+    display: var(--legend-context);
+    flex: none;
+    color: var(--key-2);
+    font: var(--text-label);
+    line-height: inherit;
+    white-space: nowrap;
+  }
+
+  .legend__chevron {
+    display: block;
+    inline-size: 12px;
+    block-size: 12px;
+  }
+
+  .legend__swap {
+    grid-area: 1 / 2 / span 2;
+    align-self: center;
+    gap: 4px;
+    inline-size: 42px;
+    min-block-size: 72px;
+    border: 1px solid var(--rule-control);
+    font: var(--text-tool);
+  }
+
+  .legend__swap .icon {
+    transform: none;
+  }
+
+  /* bar scale */
+
+  .scale {
+    display: grid;
+    align-content: center;
+    gap: 4px;
+    inline-size: calc(var(--scale-room) + 2 * var(--section-pad));
+  }
+
+  /* The height of the drawing, so the note under it does not jump while the bar is redrawn. */
+  .scale__bar {
+    block-size: 44px;
+  }
+
+  .scale__note {
+    margin: 0;
+    color: var(--key-2);
+    font: var(--text-credit);
+  }
+
+  /* the pin: where it sits on both places, and how far Home is turned */
+
+  .pin {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-areas:
+      'sentence sentence'
+      'readout controls';
+    align-content: center;
+    align-items: center;
+    gap: 5px var(--space-3);
+    overflow: hidden;
+  }
+
+  .pin__sentence {
+    grid-area: sentence;
+    /* At most two lines; a longer sentence ends in an ellipsis and is given whole in its tooltip. */
+    display: -webkit-box;
+    max-block-size: 2lh;
+    margin: 0;
+    overflow: hidden;
+    /* Never scrolled, as a hidden overflow can be: by a selection dragged down it, say. */
+    overflow: clip;
+    font: var(--text-sentence);
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  /*
+   * What a spot of the sentence adds around its words to answer the pointer over a full target.
+   * The cut-off would cut anything the spot's own box added, so these are pieces placed from the
+   * collar itself, one or more to each line of the spot that is in sight (spot-reach.ts).
+   */
+  .spot-part__reach {
+    position: absolute;
+  }
+
+  /*
+   * A spot that holds the keyboard's focus has to be in sight, with its focus ring whole. For as
+   * long as it does, the sentence is shown in full and nothing of it is cut off.
+   */
+  .pin__sentence:has(.spot-part:focus-visible) {
+    max-block-size: none;
+    overflow: visible;
+    -webkit-line-clamp: none;
+  }
+
+  .pin__readout {
+    grid-area: readout;
+    /* Room for its longest wording ("Home is turned upside down."), so the buttons beside it never move while one is held. */
+    min-inline-size: 164px;
+    margin: 0;
+    color: var(--key-2);
+    font: var(--text-label);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .pin__controls {
+    grid-area: controls;
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  /* tools: a row of buttons with the word beside the icon */
+
+  .tools {
+    grid-column: auto;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    padding-block: var(--space-2);
+    padding-inline: var(--space-2);
+  }
+
+  .tool,
+  .share__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-block-size: var(--target);
+    padding: 0 9px 1px 7px;
+    font: var(--text-label);
+    white-space: nowrap;
+  }
+
+  /* share: the one filled button, then More, then the credits */
+
+  .share {
+    grid-column: auto;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    padding-block: var(--space-2);
+  }
+
+  .share__copy {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--target);
+    padding: 0 14px 1px;
+    background: var(--key);
+    color: var(--sheet);
+    font: var(--text-label);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* The filled button is wording enough; its icon belongs to the narrow arrangement. */
+  .share__copy .icon {
+    display: none;
+  }
+
+  /* The filled button answers the pointer by letting go of a little ink; pressed, it reverses back to the sheet. */
+  .share__copy:hover:where(:not(:disabled)) {
+    background: color-mix(in srgb, var(--key) 86%, var(--sheet));
+  }
+
+  .share__copy:active:not(:disabled) {
+    background: var(--sheet);
+    color: var(--key);
+    box-shadow: inset 0 0 0 1.5px var(--key);
+  }
+
+  /* Switched off, the filled button is dimmed as a whole; its word still reads on the fill. */
+  .collar .share__copy:disabled {
+    background: var(--ink-disabled);
+    color: var(--sheet);
+  }
+
+  .share__copy-long {
+    display: inline;
+  }
+
+  .share__copy-short {
+    display: none;
+  }
+
+  .share__more {
+    flex: none;
+    border: 1px solid var(--rule-control);
+  }
+
+  .share__credits {
+    display: block;
+    flex: 0 1 196px;
+    min-inline-size: 0;
+    margin: 0 0 0 var(--space-2);
+    color: var(--key-2);
+    font: var(--text-credit);
+    text-wrap: balance;
+  }
+
+  .share__credits-short {
+    display: none;
+  }
+
+  .share__credits a {
+    color: inherit;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  .share__credits a:hover {
+    color: var(--key);
+  }
+}
+
+
+/* --- 1100px and up: one row --- */
+
+@media (min-width: 1100px) and (min-height: 501px) {
+  .collar {
+    /* Snug: the pin section shows the turn only, and Copy link goes by its short name. */
+    --legend-place-room: 104px;
+    --legend-swatch: 30px;
+    --scale-room: 168px;
+    --tool-size: 52px;
+
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-rows: minmax(var(--collar-row), auto);
+  }
+
+  .collar__group {
+    display: contents;
+  }
+
+  /* Each section in its own column, whichever of them the page has. */
+  .legend {
+    grid-column: 1;
+  }
+
+  .scale {
+    grid-column: 2;
+  }
+
+  .pin {
+    grid-column: 3;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'readout'
+      'controls';
+    gap: 6px;
+  }
+
+  .pin__sentence {
+    display: none;
+  }
+
+  /* Its neighbour to the left is in the other group, so the rule between them is drawn here. */
+  .tools {
+    grid-column: 4;
+    gap: 2px;
+    border-inline-start: 1px solid var(--rule);
+    padding-inline: var(--space-2);
+  }
+
+  /* tools: icon above word, the way the phone has them, every two-word name on two lines */
+
+  .tool {
+    display: grid;
+    /* Room for a name of two lines under every icon, so the icons stand in one row whatever the names. */
+    grid-template-rows: 22px minmax(2lh, auto);
+    place-items: center;
+    align-content: center;
+    gap: 4px;
+    inline-size: var(--tool-size);
+    min-block-size: 68px;
+    padding: 0 1px;
+    font: var(--text-tool);
+    white-space: normal;
+  }
+
+  .tool__word {
+    max-inline-size: min-content;
+  }
+
+  .share__more .tool__word {
+    max-inline-size: none;
+  }
+
+  .share {
+    grid-column: 5;
+    display: grid;
+    flex: none;
+    grid-template-columns: auto auto;
+    align-content: center;
+    justify-content: end;
+    gap: 6px;
+    padding-block: 9px 5px;
+  }
+
+  .share__copy-long {
+    display: none;
+  }
+
+  .share__copy-short {
+    display: inline;
+  }
+
+  .share__credits {
+    grid-column: 1 / -1;
+    /* No wider than the two buttons above it, so it never widens the section. */
+    inline-size: 0;
+    min-inline-size: 100%;
+    margin: 0;
+  }
+
+  .share__credits-long {
+    display: none;
+  }
+
+  .share__credits-short {
+    display: inline;
+  }
+}
+
+/* From here the row has room for the pin sentence, beside the turn buttons. */
+@media (min-width: 1280px) and (min-height: 501px) {
+  .collar {
+    --legend-place-room: 120px;
+    --legend-swatch: 36px;
+    --scale-room: 180px;
+    --tool-size: 54px;
+  }
+
+  /* The text column has a set width, whatever the sentence, so the buttons beside it never move. */
+  .pin {
+    grid-template-columns: minmax(0, 340px) auto;
+    grid-template-areas:
+      'sentence controls'
+      'readout controls';
+    justify-content: start;
+    gap: 4px var(--space-3);
+  }
+
+  .pin__sentence {
+    display: -webkit-box;
+  }
+
+  /* Two rows of small buttons, far enough apart for each to have a full target of its own. */
+  .pin__controls {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: start;
+    row-gap: var(--space-3);
+  }
+
+  .pin__controls > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1440px) and (min-height: 501px) {
+  .collar {
+    --section-pad: var(--space-4);
+    --legend-place-room: 150px;
+    --scale-room: 200px;
+    --tool-size: 56px;
+  }
+
+  .tools {
+    gap: var(--space-1);
+    padding-inline: 10px;
+  }
+}
+
+@media (min-width: 1536px) and (min-height: 501px) {
+  .collar {
+    --legend-place-room: 186px;
+    --legend-context: block;
+    --legend-swatch: 40px;
+    --scale-room: 226px;
+    --tool-size: 62px;
+  }
+
+  .share__copy-long {
+    display: inline;
+  }
+
+  .share__copy-short {
+    display: none;
+  }
+
+  .share__credits-long {
+    display: inline;
+  }
+
+  .share__credits-short {
+    display: none;
+  }
+}
+
+@media (min-width: 1680px) and (min-height: 501px) {
+  .collar {
+    --section-pad: var(--space-5);
+    --legend-place-room: 232px;
+    --scale-room: 262px;
+  }
+
+  .tools {
+    padding-inline: var(--space-4);
+  }
+}
+
+/*
+ * Under a finger the credits go by their short form on one line, so that the two links stand side by
+ * side and each can have a full target: a taller line, and links that reach above and below it.
+ */
+@media (min-width: 900px) and (min-height: 501px) and (pointer: coarse) {
+  .share {
+    row-gap: 10px;
+  }
+
+  .share__credits {
+    line-height: 28px;
+    white-space: nowrap;
+  }
+
+  .share__credits-long {
+    display: none;
+  }
+
+  .share__credits-short {
+    display: inline;
+  }
+
+  .share__credits a {
+    display: inline-block;
+    margin-block: -10px;
+    padding-block: 10px;
+  }
+}
+
+/*
+ * Contrast themes drop the fills that mean "on" and the tints that mean "button". Every control gets
+ * an outline, and what is on, open or held is drawn in the system's selection colours.
+ */
+@media (forced-colors: active) {
+  :is(.tool, .share__copy, .share__more, .legend__row, .legend__swap) {
+    border: 1px solid ButtonText;
+  }
+
+  :is(.tool, .share__copy, .share__more, .legend__row, .legend__swap):disabled {
+    border-color: GrayText;
+    color: GrayText;
+  }
+
+  .tool[aria-pressed='true']:not(:disabled),
+  .tool.is-held,
+  .share__more[aria-expanded='true'],
+  .legend__row[aria-expanded='true'],
+  :is(.tool, .share__copy, .share__more):active:not(:disabled) {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .tool[aria-pressed='true']:not(:disabled) .icon,
+  .tool.is-held .icon {
+    color: inherit;
+  }
+}

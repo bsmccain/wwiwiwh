@@ -1,0 +1,328 @@
+/*
+ * The shell: the stage on top and the collar below it. The caption band lies over the bottom edge of
+ * the stage (see stage.css), so only the collar's own height decides how tall the maps are.
+ * One fixed sheet; nothing scrolls. Colours, type and spacing come from src/styles/tokens.css.
+ */
+:root {
+  /*
+   * Tints of the two map inks for text on a reversed band (key fill). Against the key colour they
+   * measure 8.4:1 and 9.6:1 in light, 5.7:1 and 7.1:1 in dark. On the sheet the inks themselves do:
+   * Home 5.5:1 and Away 6.1:1 in light, 7.6:1 and 9.6:1 in dark.
+   */
+  --home-on-key: #ff9da8;
+  --away-on-key: #a9c8f5;
+  /* Away's ink for running text on the sheet: the line ink in light (6.1:1), the lettering ink in dark (9.6:1). */
+  --away-text: var(--away);
+  /* Outlines of controls: at least 3:1 against the sheet (3.7:1 in light, 5.2:1 in dark), where a section rule may be fainter. */
+  --rule-control: color-mix(in srgb, var(--key) 55%, var(--sheet));
+  /* A control that is switched off: dimmed, but its word still reads at 3:1 or better. */
+  --ink-disabled: color-mix(in srgb, var(--key) 55%, var(--sheet));
+  /* Outlines and hover fills of buttons on a reversed band. */
+  --rule-on-key: color-mix(in srgb, var(--sheet) 55%, transparent);
+  --wash-on-key: color-mix(in srgb, var(--sheet) 14%, transparent);
+  /* The veil over the page behind a modal dialog or sheet. Flat, like the picker's. */
+  --veil: color-mix(in srgb, var(--sheet) 70%, transparent);
+  /* The wash as a tint that can be seen through: on the sheet it is the same colour, and what lies under it still shows. */
+  --wash-clear: color-mix(in srgb, var(--key) 6%, transparent);
+  /* Running sentences in the caption and the collar. Whole pixels, so bands of text keep whole-pixel heights. */
+  --text-sentence: 400 14px/20px var(--font-ui);
+}
+
+:root[data-theme='dark'] {
+  --home-on-key: #a8340e;
+  --away-on-key: #1f4c96;
+  --away-text: var(--away-deep);
+  --wash-clear: color-mix(in srgb, var(--key) 8%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --home-on-key: #a8340e;
+    --away-on-key: #1f4c96;
+    --away-text: var(--away-deep);
+    --wash-clear: color-mix(in srgb, var(--key) 8%, transparent);
+  }
+}
+
+#app {
+  /*
+   * The height the caption band has when its words fit the usual number of lines: three on a phone
+   * held upright, two on a wider one, one from 720px. The map layers end here (stage.css), and the
+   * band is never shorter (caption.css). Lines are 20px; the band adds 18px.
+   */
+  --caption-floor: 78px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  block-size: 100vh;
+  block-size: 100dvh;
+}
+
+@media (min-width: 480px) {
+  #app {
+    --caption-floor: 58px;
+  }
+}
+
+@media (min-width: 720px) {
+  #app {
+    --caption-floor: 38px;
+  }
+}
+
+/*
+ * The margin holds the collar. Its box reaches up over the caption band, which belongs to the stage,
+ * so that the place picker and the More menu, which rise from the top of this box, clear the band
+ * instead of cutting through its sentence. The reach takes no room: the margin pulls it back.
+ */
+.margin {
+  margin-block-start: calc(-1 * var(--caption-floor));
+  padding-block-start: var(--caption-floor);
+}
+
+.margin--bare {
+  margin-block-start: 0;
+  padding-block-start: 0;
+}
+
+/*
+ * A window too short to hold both the map and the collar (a small screen zoomed far in) scrolls
+ * instead of squeezing the map to nothing and cutting the tools off.
+ */
+@media (max-height: 380px) {
+  body {
+    overflow-y: auto;
+  }
+
+  #app {
+    block-size: auto;
+    min-block-size: 100dvh;
+    grid-template-rows: minmax(200px, 1fr) auto;
+  }
+}
+
+/* Out of sight until the keyboard reaches it. */
+.skip-link {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
+  z-index: 10;
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px solid var(--key);
+  border-radius: var(--radius-control);
+  background: var(--sheet);
+  color: var(--key);
+  font: var(--text-label);
+}
+
+.skip-link:not(:focus-visible) {
+  clip-path: inset(50%);
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+
+/* --- shared pieces --- */
+
+.icon {
+  flex: none;
+  inline-size: 22px;
+  block-size: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* One stroke weight at every size an icon is shown: the line is 1.5px on screen, not 1.5 units of the drawing. */
+.icon > * {
+  vector-effect: non-scaling-stroke;
+}
+
+.icon__dot {
+  fill: currentColor;
+  stroke: none;
+}
+
+/*
+ * Runs of a sentence that name something on one of the two maps, in that map's ink. Each keeps its
+ * writing direction to itself: a name written right to left reads as it should within its run, and
+ * the words around the run stay where they are. A run that is one name alone is a <bdi>, which
+ * takes its direction from the name; a run of several ("Palo Alto to San Jose") stays left to right.
+ */
+.ink {
+  unicode-bidi: isolate;
+}
+
+.ink--home {
+  color: var(--home);
+  font-weight: 600;
+}
+
+.ink--away {
+  color: var(--away-text);
+  font-weight: 600;
+}
+
+.ink--figure {
+  font-family: var(--font-plate);
+  font-weight: 600;
+}
+
+/*
+ * The two spots in the pin sentence: words of the sentence, and controls that open the picker for
+ * that spot. They are inline boxes, so they break across lines as the sentence does. What a spot
+ * adds around its words to answer the pointer over a full target depends on where the sentence
+ * stands (caption.css, collar.css); the words themselves lie above all of it, so a press on a word
+ * is always for its own spot.
+ */
+.spot-part {
+  outline: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.spot-part__words {
+  position: relative;
+  z-index: 1;
+  border-radius: var(--radius-tag);
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+/* Seen through, so that the dots ending a sentence that the collar cuts short still show under it. */
+.spot-part:hover .spot-part__words,
+.spot-part[aria-expanded='true'] .spot-part__words {
+  background: var(--wash-clear);
+}
+
+/* The spot whose picker is open is underlined in full, not reversed: its words have to keep their ink. */
+.spot-part[aria-expanded='true'] .spot-part__words {
+  text-decoration-style: solid;
+}
+
+.spot-part:active .spot-part__words {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+.spot-part:focus-visible .spot-part__words {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/*
+ * No text selection, tap flash or double-tap zoom on the shell's buttons. The handles drawn over the
+ * maps are buttons too, but they are dragged: their own touch-action must stand.
+ */
+:is(#app, .menu, .dialog) button:not(.mapz-handle) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+/*
+ * A small outlined button for a row of text: lower than a full target, with the difference made up
+ * around it. The make-up is measured from inside the border, so it reaches one pixel further out.
+ */
+.mini-button {
+  --mini-size: 28px;
+
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-inline-size: 30px;
+  block-size: var(--mini-size);
+  padding: 0 8px 1px;
+  border: 1px solid var(--rule-control);
+  border-radius: var(--radius-control);
+  font: var(--text-tool);
+  white-space: nowrap;
+}
+
+.mini-button::after {
+  content: '';
+  position: absolute;
+  inset: calc((var(--mini-size) - var(--target)) / 2 - 1px) -1px;
+}
+
+.mini-button .icon {
+  inline-size: 16px;
+  block-size: 16px;
+}
+
+/* Icon and word: the icon hangs a little into the padding. A button with only an icon is square. */
+.mini-button:not(.mini-button--icon) .icon {
+  margin-inline-start: -3px;
+}
+
+.mini-button--icon {
+  padding: 0;
+}
+
+.mini-button:hover:not(:disabled) {
+  background: var(--wash);
+}
+
+.mini-button:active:not(:disabled) {
+  border-color: var(--key);
+  background: var(--key);
+  color: var(--sheet);
+}
+
+.mini-button:disabled {
+  border-color: var(--rule);
+  color: var(--ink-disabled);
+}
+
+@media (pointer: coarse) {
+  .mini-button {
+    --mini-size: 36px;
+
+    min-inline-size: 40px;
+  }
+}
+
+/*
+ * Contrast themes replace fills, so "on" needs another sign: the system's own selection colours.
+ * Shared here for every control of the shell that is reversed while on, pressed or chosen.
+ */
+@media (forced-colors: active) {
+  .mini-button:disabled {
+    border-color: GrayText;
+    color: GrayText;
+  }
+
+  .spot-part__words {
+    color: LinkText;
+  }
+
+  .spot-part:active .spot-part__words {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  :is(.mini-button, .stage__retry, .zoom__button):active:not(:disabled) {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}

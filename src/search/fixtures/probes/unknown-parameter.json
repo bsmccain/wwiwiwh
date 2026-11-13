@@ -1,0 +1,8 @@
+{
+  "note": "Any parameter the server does not know is an HTTP 400.",
+  "request": "https://photon.komoot.io/api/?q=10+downing&lang=en&limit=15&lat=51.5074&lon=-0.1278&bbox=-2.293%2C50.160%2C2.037%2C52.855&foo=1",
+  "status": 400,
+  "body": {
+    "message": "Unknown query parameter 'foo'.  Allowed parameters are: [include, location_bias_scale, debug, dedupe, bbox, countrycode, lon, zoom, layer, q, limit, osm_tag, suggest_addresses, exclude, geometry, lang, lat]"
+  }
+}

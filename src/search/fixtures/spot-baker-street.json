@@ -1,0 +1,12 @@
+{
+  "request": "https://photon.komoot.io/api/?q=baker+street&lang=en&limit=15&lat=51.5074&lon=-0.1278&bbox=-2.293%2C50.160%2C2.037%2C52.855",
+  "features": [
+    {"properties":{"osm_type":"W","osm_id":379359030,"osm_key":"highway","osm_value":"primary","type":"street","name":"Baker Street","district":"Marylebone","city":"London","state":"England","postcode":"W1U 7RT","country":"United Kingdom","countrycode":"GB"},"geometry":{"coordinates":[-0.1558004,51.5183417]}},
+    {"properties":{"osm_type":"W","osm_id":1323214505,"osm_key":"highway","osm_value":"primary","type":"street","name":"Baker Street","district":"Marylebone","city":"London","state":"England","postcode":"W1U 3BL","country":"United Kingdom","countrycode":"GB"},"geometry":{"coordinates":[-0.1553503,51.5173404]}},
+    {"properties":{"osm_type":"W","osm_id":672552145,"osm_key":"highway","osm_value":"primary","type":"street","name":"Baker Street","district":"Marylebone","city":"London","state":"England","postcode":"W1U 6RJ","country":"United Kingdom","countrycode":"GB"},"geometry":{"coordinates":[-0.1566153,51.52015]}},
+    {"properties":{"osm_type":"W","osm_id":210337713,"osm_key":"highway","osm_value":"trunk","type":"street","name":"Baker Street","district":"Marylebone","city":"London","state":"England","postcode":"W1U 6SE","country":"United Kingdom","countrycode":"GB"},"geometry":{"coordinates":[-0.1575201,51.5221225]}},
+    {"properties":{"osm_type":"W","osm_id":674839809,"osm_key":"highway","osm_value":"trunk","type":"street","name":"Baker Street","district":"Marylebone","city":"London","state":"England","postcode":"NW1 6UY","country":"United Kingdom","countrycode":"GB"},"geometry":{"coordinates":[-0.1578091,51.5227503]}},
+    {"properties":{"osm_type":"W","osm_id":293095677,"osm_key":"highway","osm_value":"unclassified","type":"street","name":"Baker Street","district":"Marylebone","city":"London","state":"England","postcode":"NW1 4RB","country":"United Kingdom","countrycode":"GB"},"geometry":{"coordinates":[-0.1586408,51.5245814]}},
+    {"properties":{"osm_type":"W","osm_id":673730660,"osm_key":"highway","osm_value":"unclassified","type":"street","name":"Baker Street","district":"Marylebone","city":"London","state":"England","postcode":"NW1 6AS","country":"United Kingdom","countrycode":"GB"},"geometry":{"coordinates":[-0.1585058,51.524285]}}
+  ]
+}

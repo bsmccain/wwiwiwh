@@ -1,0 +1,6 @@
+{
+  "request": "https://photon.komoot.io/api/?q=95014&lang=en&limit=15&lat=37.3322&lon=-121.8896&bbox=-123.584%2C35.985%2C-120.195%2C38.680",
+  "features": [
+    {"properties":{"osm_key":"place","osm_value":"postcode","type":"other","name":"95014","city":"Cupertino","county":"Santa Clara","state":"California","country":"United States","countrycode":"US"},"geometry":{"coordinates":[-122.03713904415834,37.31778742852825]}}
+  ]
+}

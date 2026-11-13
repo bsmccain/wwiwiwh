@@ -1,0 +1,408 @@
+/*
+ * The instruments: everything on the stage that is neither map nor place name. All of it is drawn in
+ * the key ink, knocked out of the maps with the sheet colour so it reads on any ground.
+ * Positions are written by script as transforms from the layer's top-left corner.
+ */
+.mapz-instruments {
+  --mapz-knob-target: 48px; /* reaches in to the pin's own target, so the pointer can cross from one to the other */
+
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  contain: strict;
+  /* The layer never takes the pointer: only the handles do, and the maps stay usable underneath. */
+  pointer-events: none;
+  color: var(--key);
+  font-family: var(--font-plate);
+  font-variant-numeric: tabular-nums;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.mapz-instruments [hidden] {
+  display: none;
+}
+
+.mapz-instruments__ink {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  fill: none;
+  stroke-linecap: round;
+}
+
+/*
+ * Everything positioned by script starts from the layer's top-left corner. Physical sides on purpose:
+ * stage positions are measured from the left whatever the page's writing direction.
+ */
+.mapz-ring-label,
+.mapz-trip-plaque,
+.mapz-trip-end,
+.mapz-pin-group,
+.mapz-pin-chip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.mapz-handle {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  pointer-events: auto;
+  /* Not the open hand of the map underneath: a drag that starts here moves this one thing, not both maps. */
+  cursor: move;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mapz-handle.is-held {
+  cursor: grabbing;
+}
+
+/*
+ * A handle that leaves its presses to the map: the pin or a trip end while it rests (see
+ * resting.ts), the pin throughout slide mode, and a trip end lying under a pin that does. The cursor
+ * over it is then the map's own.
+ */
+.mapz-handle.is-aside {
+  pointer-events: none;
+}
+
+/*
+ * A focus ring hugs what is drawn, not the much larger pointer target around it. Place names are
+ * lettered above this layer and keep clear of a small box about each handle; the ring has to fit in
+ * that box or a name could cover part of it. Script sets how wide the ring is overall
+ * (--mapz-focus-across); the offset pulls the outline in from the target's edge to there.
+ */
+.mapz-pin:focus-visible,
+.mapz-trip-end:focus-visible {
+  outline: 2px solid var(--key);
+  outline-offset: calc((var(--mapz-focus-across) - var(--target, 40px)) / 2 - 2px);
+}
+
+/* --- rings --- */
+
+.mapz-ring__casing {
+  stroke: var(--sheet);
+  stroke-width: 3.5;
+  opacity: 0.65;
+}
+
+.mapz-ring {
+  stroke: var(--key);
+  stroke-width: 1.4;
+  stroke-dasharray: 2 5;
+}
+
+.mapz-ring-label {
+  z-index: 1;
+  padding: 0 7px;
+  border: 1px solid var(--key);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--sheet);
+  font: 500 11px/14px var(--font-plate);
+  white-space: nowrap;
+}
+
+/* --- the trip line and the rubber band --- */
+
+.mapz-trip__casing {
+  stroke: var(--sheet);
+  stroke-width: 5;
+}
+
+.mapz-trip__line {
+  stroke: var(--key);
+  stroke-width: 1.5;
+}
+
+.mapz-trip__end {
+  fill: var(--sheet);
+  stroke: var(--key);
+  stroke-width: 1.5;
+}
+
+.mapz-trip--draft .mapz-trip__line {
+  stroke-dasharray: 5 4;
+}
+
+.mapz-trip-plaque {
+  z-index: 2;
+  padding: 0 7px; /* keep in step with PLAQUE_PADDING_X_PX in trip-line.ts */
+  border-radius: var(--radius-tag, 2px);
+  /* Reversed, like anything that is "on". */
+  background: var(--key);
+  color: var(--sheet);
+  font: 600 13px/20px var(--font-plate);
+  white-space: nowrap;
+  outline: 1px solid var(--sheet);
+}
+
+/* The rubber band's plaque is provisional: outlined, not reversed. */
+.mapz-trip-plaque--draft {
+  background: var(--sheet);
+  color: var(--key);
+  outline: 1px solid var(--key);
+}
+
+.mapz-trip-end {
+  z-index: 3;
+  inline-size: var(--target, 40px);
+  block-size: var(--target, 40px);
+  border-radius: 50%;
+}
+
+/* --- the pin --- */
+
+.mapz-pin-group {
+  z-index: 4;
+}
+
+.mapz-pin {
+  position: absolute;
+  top: calc(var(--target, 40px) / -2);
+  left: calc(var(--target, 40px) / -2);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  inline-size: var(--target, 40px);
+  block-size: var(--target, 40px);
+  border-radius: 50%;
+}
+
+.mapz-pin__mark {
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  /* The button's round target takes the pointer; the drawing's square box would reach past it at the corners. */
+  pointer-events: none;
+}
+
+.mapz-pin__halo {
+  stroke: var(--sheet);
+  stroke-width: 5;
+  opacity: 0.9;
+}
+
+.mapz-pin__ink {
+  stroke: var(--key);
+  stroke-width: 1.5;
+}
+
+.mapz-pin__dot {
+  fill: var(--key);
+}
+
+.mapz-pin__north {
+  fill: var(--key);
+  stroke: var(--sheet);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* --- the turn knob and its ring --- */
+
+/*
+ * Script decides when the ring and knob are up (see knob.ts) and says so with one class on the layer.
+ * It also sets the ring's radius, as --mapz-turn-radius on .mapz-turn.
+ * Hidden, the knob stays in the tab order (focusing it brings it up); only its grip, the part that
+ * takes the pointer, is taken away once the fade is done, so an unseen knob never swallows a click
+ * on the map.
+ */
+.mapz-turn {
+  opacity: 0;
+  transition: opacity var(--dur-fast, 120ms) linear;
+}
+
+.mapz-knob__grip {
+  visibility: hidden;
+  transition: visibility 0s linear var(--dur-fast, 120ms);
+}
+
+.mapz-instruments--turn-up .mapz-turn {
+  opacity: 1;
+}
+
+.mapz-instruments--turn-up .mapz-knob__grip {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Hover styles only where the pointer can hover: a touch screen leaves :hover on whatever was tapped last. */
+@media (hover: hover) {
+  .mapz-knob__grip:hover .mapz-knob__face {
+    background: var(--key);
+    color: var(--sheet);
+  }
+
+  .mapz-pin-chip:hover {
+    background: var(--wash, var(--sheet));
+  }
+}
+
+.mapz-turn__ring {
+  position: absolute;
+  top: calc(-1 * var(--mapz-turn-radius) - 16px);
+  left: calc(-1 * var(--mapz-turn-radius) - 16px);
+  fill: none;
+  stroke-linecap: round;
+}
+
+.mapz-turn__casing {
+  stroke: var(--sheet);
+  stroke-width: 4;
+  opacity: 0.8;
+}
+
+.mapz-turn__line,
+.mapz-turn__tick {
+  stroke: var(--key);
+  stroke-width: 1;
+}
+
+.mapz-turn__arm {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.mapz-knob {
+  position: absolute;
+  top: calc(-1 * var(--mapz-turn-radius) - var(--mapz-knob-target) / 2);
+  left: calc(var(--mapz-knob-target) / -2);
+  inline-size: var(--mapz-knob-target);
+  block-size: var(--mapz-knob-target);
+  border-radius: 50%;
+}
+
+.mapz-knob:focus-visible {
+  outline: 2px solid var(--key);
+  outline-offset: calc((var(--mapz-focus-across) - var(--mapz-knob-target)) / 2 - 2px);
+}
+
+.mapz-knob__grip {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 50%;
+}
+
+.mapz-knob__face {
+  display: grid;
+  place-items: center;
+  inline-size: 22px;
+  block-size: 22px;
+  border: 1.5px solid var(--key);
+  border-radius: 50%;
+  background: var(--sheet);
+  font: 600 11px/1 var(--font-plate);
+}
+
+.mapz-knob__letter {
+  display: block;
+}
+
+.mapz-knob__grip.is-held .mapz-knob__face {
+  background: var(--key);
+  color: var(--sheet);
+}
+
+/* --- the chip that points at an off-stage pin --- */
+
+.mapz-pin-chip {
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: var(--target, 40px);
+  margin: 0;
+  padding: 0 12px 0 9px;
+  border: 1.5px solid var(--key);
+  border-radius: var(--radius-control, 3px);
+  background: var(--sheet);
+  color: var(--key);
+  font: 500 13px/1 var(--font-ui);
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.mapz-pin-chip:focus-visible {
+  outline: 2px solid var(--key);
+  outline-offset: 2px;
+}
+
+.mapz-pin-chip__arrow {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mapz-pin-chip__figure {
+  font: 600 14px/1 var(--font-plate);
+}
+
+/* --- measuring --- */
+
+.mapz-measure-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  margin: -12px 0 0 -12px;
+}
+
+.mapz-measure-center__mark {
+  display: block;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.mapz-measure-center__halo {
+  stroke: var(--sheet);
+  stroke-width: 4.5;
+  opacity: 0.9;
+}
+
+.mapz-measure-center__ink {
+  stroke: var(--key);
+  stroke-width: 1.5;
+}
+
+/* While measuring, a click anywhere places a trip end, the handles included: they step aside. */
+.mapz-instruments--measure .mapz-handle {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapz-turn,
+  .mapz-knob__grip {
+    transition: none;
+  }
+}
+
+/*
+ * Forced colours (contrast themes). The maps underneath keep their own colours there, so the theme's
+ * key ink could land on anything. The layer is drawn in the system's text colour and cased in its
+ * ground colour instead, which read against each other on any map. It opts out of the browser's own
+ * recolouring so that what is reversed (the plaque, a held knob) stays reversed.
+ */
+@media (forced-colors: active) {
+  .mapz-instruments {
+    forced-color-adjust: none;
+    --key: CanvasText;
+    --sheet: Canvas;
+    --wash: Canvas;
+  }
+}
