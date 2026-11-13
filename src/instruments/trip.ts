@@ -37,10 +37,17 @@ function liesUnderPin(end: ScreenPoint, pin: ScreenPoint, pinAsideRadius: number
   return pinAsideRadius !== null && distanceBetween(end, pin) <= pinAsideRadius;
 }
 
-/** The trip with one end moved. That end's name is dropped: it named the old spot. */
+/**
+ * The trip with one end moved. That end's names on Home and Away are dropped: they named the old
+ * spot. The other end keeps both of its names.
+ */
 export function moveTripEnd(trip: Trip, end: TripEnd, position: LngLat): Trip {
-  if (end === 'from') return { from: position, to: trip.to, ...(trip.toName === undefined ? {} : { toName: trip.toName }) };
-  return { from: trip.from, to: position, ...(trip.fromName === undefined ? {} : { fromName: trip.fromName }) };
+  if (end === 'from') {
+    const { fromName: _name, fromLanding: _landing, ...rest } = trip;
+    return { ...rest, from: position };
+  }
+  const { toName: _name, toLanding: _landing, ...rest } = trip;
+  return { ...rest, to: position };
 }
 
 /**
