@@ -1,15 +1,15 @@
 import { expect, test } from './fixtures';
 
-test.describe('About mapz', () => {
+test.describe('About wwiwiwh', () => {
   test.beforeEach(async ({ app }) => {
     await app.open();
   });
 
   test('opens from More and gives the credits the map data asks for', async ({ app, page }) => {
     await app.press(app.moreButton);
-    await app.press(app.menu.getByRole('button', { name: 'About mapz' }));
+    await app.press(app.menu.getByRole('button', { name: 'About wwiwiwh' }));
 
-    const about = page.getByRole('dialog', { name: 'About mapz' });
+    const about = page.getByRole('dialog', { name: 'About wwiwiwh' });
     await expect(about).toBeVisible();
     await expect(about.getByRole('link', { name: /OpenStreetMap/ })).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright');
     await expect(about.getByRole('link', { name: /OpenFreeMap/ })).toHaveAttribute('href', 'https://openfreemap.org');
@@ -18,8 +18,8 @@ test.describe('About mapz', () => {
 
   test('closes again and hands focus back to More', { tag: '@desktop' }, async ({ app, page }) => {
     await app.moreButton.click();
-    await app.menu.getByRole('button', { name: 'About mapz' }).click();
-    const about = page.getByRole('dialog', { name: 'About mapz' });
+    await app.menu.getByRole('button', { name: 'About wwiwiwh' }).click();
+    const about = page.getByRole('dialog', { name: 'About wwiwiwh' });
     await expect(about).toBeVisible();
 
     await page.keyboard.press('Escape');
@@ -30,6 +30,6 @@ test.describe('About mapz', () => {
 
   test('opens from the credit on the map', { tag: '@phone' }, async ({ page }) => {
     await page.getByRole('button', { name: /^Map credits/ }).tap();
-    await expect(page.getByRole('dialog', { name: 'About mapz' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'About wwiwiwh' })).toBeVisible();
   });
 });

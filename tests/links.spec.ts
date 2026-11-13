@@ -1,6 +1,6 @@
 import { distanceMeters } from '../src/geo/distance';
 import { expect, test } from './fixtures';
-import { MapzApp, tripOf } from './support/app';
+import { WwiwiwhApp, tripOf } from './support/app';
 import { dragWithMouse, expectPointNear } from './support/pointer';
 import { expectDrawnInOrder } from './support/text';
 
@@ -16,7 +16,7 @@ test.describe('opening a link', () => {
     expect(distanceMeters(state.camera.center, { lat: 48.86, lng: 2.34 })).toBeLessThan(1);
     expect(state.trip).toEqual({ from: { lat: 35.7, lng: 139.6 }, to: { lat: 35.6, lng: 139.8 } });
     expect(state.rings).toBe(false);
-    await expect(page).toHaveTitle('Tokyo over Paris at the same scale | mapz');
+    await expect(page).toHaveTitle('Tokyo over Paris at the same scale | wwiwiwh');
     await expect(app.toast).toHaveCount(0);
   });
 
@@ -123,7 +123,7 @@ test.describe('Copy link', { tag: '@desktop' }, () => {
     await expect(app.toast).toHaveText('Link copied. It opens this exact view.');
     const link = await page.evaluate(() => navigator.clipboard.readText());
 
-    const fresh = new MapzApp(await context.newPage(), false);
+    const fresh = new WwiwiwhApp(await context.newPage(), false);
     await fresh.page.goto(link);
     await fresh.drawn();
     const copy = await fresh.state();

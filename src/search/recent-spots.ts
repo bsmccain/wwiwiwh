@@ -4,7 +4,7 @@ import { browserStorage, type RecentStorage, storedPosition } from './recent';
 import { SURROUNDINGS_METERS } from './spots';
 import { fold } from './text';
 
-const STORAGE_KEY = 'mapz.recent-spots';
+const STORAGE_KEY = 'wwiwiwh.recent-spots';
 export const MAX_REMEMBERED_SPOTS = 12;
 /** A spot of the same name this close repeats one already remembered: one address found twice, a few doors apart at most. */
 const REPEAT_WITHIN_METERS = 50;

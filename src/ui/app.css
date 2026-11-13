@@ -224,7 +224,7 @@
  * No text selection, tap flash or double-tap zoom on the shell's buttons. The handles drawn over the
  * maps are buttons too, but they are dragged: their own touch-action must stand.
  */
-:is(#app, .menu, .dialog) button:not(.mapz-handle) {
+:is(#app, .menu, .dialog) button:not(.wwiwiwh-handle) {
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;

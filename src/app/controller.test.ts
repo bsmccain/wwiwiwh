@@ -48,7 +48,7 @@ function setup() {
       },
     },
     applyTheme: (theme) => applied.push(theme),
-    pageUrl: () => 'https://example.test/mapz/',
+    pageUrl: () => 'https://example.test/wwiwiwh/',
     savePrefs: (prefs) => saved.push(prefs),
   });
   const setSystemDark = (dark: boolean) => {
@@ -459,7 +459,7 @@ describe('controller', () => {
     controller.slideBy(50, 50);
     controller.turnBy(12);
     const link = controller.currentLink();
-    expect(link.startsWith('https://example.test/mapz/#home=san-jose&away=london&pin=')).toBe(true);
+    expect(link.startsWith('https://example.test/wwiwiwh/#home=san-jose&away=london&pin=')).toBe(true);
     const { state, incomplete } = decodeLink(link.split('#')[1] as string);
     expect(incomplete).toBe(false);
     expect(state.reg.rotation).toBe(12);

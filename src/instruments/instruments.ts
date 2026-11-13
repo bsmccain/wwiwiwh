@@ -68,8 +68,8 @@ function sameBoxes(a: readonly ScreenBox[], b: readonly ScreenBox[]): boolean {
  * whenever they were put or carried to where the pointer may be (see resting.ts).
  */
 export function createInstruments({ container, dual, store }: InstrumentsOptions): Instruments {
-  const layer = html('div', 'mapz-instruments', { role: 'group', 'aria-label': 'Pin, turn knob and trip' });
-  const ink = drawing('mapz-instruments__ink', {}, []);
+  const layer = html('div', 'wwiwiwh-instruments', { role: 'group', 'aria-label': 'Pin, turn knob and trip' });
+  const ink = drawing('wwiwiwh-instruments__ink', {}, []);
   layer.append(ink);
   container.append(layer);
 
@@ -109,8 +109,8 @@ export function createInstruments({ container, dual, store }: InstrumentsOptions
       pinAsideRadius: pin.asideRadius(),
       state,
     };
-    setClass(layer, 'mapz-instruments--turn-up', frame.turnUp);
-    setClass(layer, 'mapz-instruments--measure', state.mode === 'measure');
+    setClass(layer, 'wwiwiwh-instruments--turn-up', frame.turnUp);
+    setClass(layer, 'wwiwiwh-instruments--measure', state.mode === 'measure');
     for (const part of parts) part.layout(frame);
   }
 

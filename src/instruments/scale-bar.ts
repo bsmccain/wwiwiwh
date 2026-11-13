@@ -55,7 +55,7 @@ export function planScaleBar(metersPerPixel: number, maxLengthPx: number, units:
   return { distance, lengthPx: distance.meters / metersPerPixel, ...divisionOf(distance) };
 }
 
-/** Lettering of the numerals. Keep in step with .mapz-scale-bar text in scale-bar.css. */
+/** Lettering of the numerals. Keep in step with .wwiwiwh-scale-bar text in scale-bar.css. */
 const NUMERAL_FONT = `500 11.5px ${PLATE_FAMILY}`;
 const BAR_HEIGHT = 5;
 const TICK_LENGTH = 3;
@@ -84,17 +84,17 @@ function drawBar(group: SVGGElement, plan: ScaleBarPlan, row: Row, measurer: Tex
   const tickFrom = row === 'upper' ? top - 0.5 - TICK_LENGTH : top + BAR_HEIGHT + 0.5;
   const baseline = row === 'upper' ? UPPER_NUMERAL_BASELINE : LOWER_NUMERAL_BASELINE;
 
-  const outline = svg('rect', { class: 'mapz-scale-bar__outline', x: 0.5, y: top, height: BAR_HEIGHT });
+  const outline = svg('rect', { class: 'wwiwiwh-scale-bar__outline', x: 0.5, y: top, height: BAR_HEIGHT });
   const fills = Array.from({ length: Math.ceil(plan.segments / 2) }, () =>
-    svg('rect', { class: 'mapz-scale-bar__fill', y: top, height: BAR_HEIGHT }),
+    svg('rect', { class: 'wwiwiwh-scale-bar__fill', y: top, height: BAR_HEIGHT }),
   );
-  const ticks = plan.ticks.map(() => svg('path', { class: 'mapz-scale-bar__tick' }));
+  const ticks = plan.ticks.map(() => svg('path', { class: 'wwiwiwh-scale-bar__tick' }));
   const numerals = plan.ticks.map((tick, index) => {
-    const text = svg('text', { class: 'mapz-scale-bar__numeral', y: baseline, 'text-anchor': index === 0 ? 'start' : 'middle' });
+    const text = svg('text', { class: 'wwiwiwh-scale-bar__numeral', y: baseline, 'text-anchor': index === 0 ? 'start' : 'middle' });
     text.textContent = tick.label;
     return text;
   });
-  const unit = svg('text', { class: 'mapz-scale-bar__unit', y: baseline });
+  const unit = svg('text', { class: 'wwiwiwh-scale-bar__unit', y: baseline });
   unit.textContent = plan.distance.unit;
   group.replaceChildren(outline, ...fills, ...ticks, ...numerals, unit);
 
@@ -137,7 +137,7 @@ export function createScaleBar(container: HTMLElement): { update(metersPerPixel:
     { row: 'upper', units: 'mi', group: svg('g') },
     { row: 'lower', units: 'km', group: svg('g') },
   ];
-  const root = svg('svg', { class: 'mapz-scale-bar', role: 'img', height: HEIGHT, focusable: 'false' }, rows.map((row) => row.group));
+  const root = svg('svg', { class: 'wwiwiwh-scale-bar', role: 'img', height: HEIGHT, focusable: 'false' }, rows.map((row) => row.group));
   container.append(root);
   const measurer = createTextMeasurer();
 

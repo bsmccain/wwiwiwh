@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { distanceMeters } from '../../src/geo/distance';
 import type { LngLat } from '../../src/geo/types';
-import type { MapzApp } from './app';
+import type { WwiwiwhApp } from './app';
 
 /**
  * Reading the link in the address bar (see src/app/url.ts for its parts), and waiting for it to
@@ -24,7 +24,7 @@ function position(text: string | undefined): LngLat {
 }
 
 /** Waits until the address names, as `pin=`, the Home and Away spots the pin now holds together. */
-export async function expectPinInAddress(app: MapzApp): Promise<void> {
+export async function expectPinInAddress(app: WwiwiwhApp): Promise<void> {
   await expect(async () => {
     const { reg } = await app.state();
     const [home, away] = (part(await app.hash(), 'pin') ?? '').split('~');
@@ -34,7 +34,7 @@ export async function expectPinInAddress(app: MapzApp): Promise<void> {
 }
 
 /** Waits until the address names, as `view=`, the view that is now on screen. */
-export async function expectViewInAddress(app: MapzApp): Promise<void> {
+export async function expectViewInAddress(app: WwiwiwhApp): Promise<void> {
   await expect(async () => {
     const { camera } = await app.state();
     const [lat, lng, zoom] = (part(await app.hash(), 'view') ?? '').split(',');

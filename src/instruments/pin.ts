@@ -76,8 +76,8 @@ export interface Pin extends Part {
  * In slide mode the handle steps aside throughout: there every press on the map slides Home.
  */
 export function createPin({ dual, store, layer, sizes, pointers, relayout }: InstrumentContext): Pin {
-  const northTick = svg('path', { class: 'mapz-pin__north', d: 'M0 -19.5L-3.4 -14.2H3.4Z' });
-  const handle = html('button', 'mapz-pin mapz-handle', {
+  const northTick = svg('path', { class: 'wwiwiwh-pin__north', d: 'M0 -19.5L-3.4 -14.2H3.4Z' });
+  const handle = html('button', 'wwiwiwh-pin wwiwiwh-handle', {
     type: 'button',
     'aria-label': 'The pin',
     'aria-haspopup': 'dialog',
@@ -86,14 +86,14 @@ export function createPin({ dual, store, layer, sizes, pointers, relayout }: Ins
   });
   hugFocus(handle, PIN_CLEARANCE_PX);
   handle.append(
-    drawing('mapz-pin__mark', { viewBox: '-20 -20 40 40', width: 40, height: 40 }, [
-      ringAndCross('mapz-pin__halo'),
-      ringAndCross('mapz-pin__ink'),
-      svg('circle', { class: 'mapz-pin__dot', r: 1.75 }),
+    drawing('wwiwiwh-pin__mark', { viewBox: '-20 -20 40 40', width: 40, height: 40 }, [
+      ringAndCross('wwiwiwh-pin__halo'),
+      ringAndCross('wwiwiwh-pin__ink'),
+      svg('circle', { class: 'wwiwiwh-pin__dot', r: 1.75 }),
       northTick,
     ]),
   );
-  const group = html('div', 'mapz-pin-group');
+  const group = html('div', 'wwiwiwh-pin-group');
   group.append(handle);
   layer.append(group);
   const { rest, unbind: unbindRest } = restHandle(handle, sizes, pointers, relayout);

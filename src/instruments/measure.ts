@@ -31,11 +31,11 @@ export interface Measure extends Part {
  */
 export function createMeasure({ dual, store, ink, layer, measurer, relayout }: InstrumentContext): Measure {
   const band = createTripLine(ink, layer, measurer, 'draft');
-  const centerMark = html('div', 'mapz-measure-center', { 'aria-hidden': 'true', hidden: '' });
+  const centerMark = html('div', 'wwiwiwh-measure-center', { 'aria-hidden': 'true', hidden: '' });
   centerMark.append(
-    drawing('mapz-measure-center__mark', { viewBox: '-12 -12 24 24', width: CENTER_MARK_PX, height: CENTER_MARK_PX }, [
-      svg('path', { class: 'mapz-measure-center__halo', d: 'M-8 0H8M0 -8V8' }),
-      svg('path', { class: 'mapz-measure-center__ink', d: 'M-8 0H8M0 -8V8' }),
+    drawing('wwiwiwh-measure-center__mark', { viewBox: '-12 -12 24 24', width: CENTER_MARK_PX, height: CENTER_MARK_PX }, [
+      svg('path', { class: 'wwiwiwh-measure-center__halo', d: 'M-8 0H8M0 -8V8' }),
+      svg('path', { class: 'wwiwiwh-measure-center__ink', d: 'M-8 0H8M0 -8V8' }),
     ]),
   );
   layer.append(centerMark);

@@ -4,7 +4,7 @@ import type { LngLat } from '../geo/types';
 import { MAX_LATITUDE } from './photon';
 import { samePlace } from './place';
 
-const STORAGE_KEY = 'mapz.recent-places';
+const STORAGE_KEY = 'wwiwiwh.recent-places';
 export const MAX_RECENT = 6;
 
 /** The part of Web Storage this module uses, so tests can hand in a fake. */

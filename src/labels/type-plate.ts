@@ -135,7 +135,7 @@ export function createTypePlate(options: TypePlateOptions): TypePlate {
   const reserved = options.reserved ?? (() => []);
 
   const root = document.createElement('div');
-  root.className = 'mapz-plate';
+  root.className = 'wwiwiwh-plate';
   // The names are lettering on a picture. What they say reaches assistive technology through the
   // readouts built on `nearestPlace`.
   root.setAttribute('aria-hidden', 'true');

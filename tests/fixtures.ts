@@ -1,5 +1,5 @@
 import { test as base, expect } from '@playwright/test';
-import { MapzApp, watchAppIn } from './support/app';
+import { WwiwiwhApp, watchAppIn } from './support/app';
 import { watchConsole, type ConsoleWatch } from './support/console-watch';
 import { Fingers } from './support/fingers';
 import { stubMapService, type MapService } from './support/map-service';
@@ -13,7 +13,7 @@ interface Fixtures {
   /** Fails the test if a page logs an error or a warning that the test did not allow. */
   consoleWatch: ConsoleWatch;
   /** The app in the test's page. */
-  app: MapzApp;
+  app: WwiwiwhApp;
   /** Touch input that lasts: holds and drags. */
   fingers: Fingers;
 }
@@ -44,7 +44,7 @@ export const test = base.extend<Fixtures>({
 
   app: async ({ context, page, hasTouch }, use) => {
     await watchAppIn(context);
-    await use(new MapzApp(page, hasTouch));
+    await use(new WwiwiwhApp(page, hasTouch));
   },
 
   fingers: async ({ page }, use) => {

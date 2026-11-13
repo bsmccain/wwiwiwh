@@ -1,5 +1,5 @@
 {
-  "name": "mapz",
+  "name": "wwiwiwh",
   "private": true,
   "version": "0.1.0-alpha",
   "description": "Lay the street map of a place you know over another place at the same scale.",
@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:live": "MAPZ_LIVE=1 playwright test --grep @live",
+    "test:e2e:live": "WWIWIWH_LIVE=1 playwright test --grep @live",
     "shot": "node scripts/screenshot.mjs"
   },
   "dependencies": {

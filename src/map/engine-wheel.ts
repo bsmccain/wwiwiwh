@@ -7,7 +7,7 @@ import { wheelZoomChange } from './engine-math';
 const REST_MS = 200;
 
 /** Marks the camera moves made here, one per turn of the wheel, so they are not each taken for a view come to rest. */
-export const BY_WHEEL_STEP = { mapzWheelStep: true } as const;
+export const BY_WHEEL_STEP = { wwiwiwhWheelStep: true } as const;
 
 export interface WheelSteps {
   /** True from a turn of the wheel until the view has come to rest after it. */

@@ -6,7 +6,7 @@ import { bindDrag } from './drag';
 import { boxAround, distanceBetween, pointAtAngle, stepTurn, turnWhileDragging } from './geometry';
 import type { Frame, InstrumentContext, Part } from './part';
 
-/** Radius of the ring the knob rides on. The stylesheet takes it from here, as --mapz-turn-radius. */
+/** Radius of the ring the knob rides on. The stylesheet takes it from here, as --wwiwiwh-turn-radius. */
 const TURN_RADIUS = 44;
 /** Closer to the pin than this, the pointer's direction swings too wildly to steer by. */
 const STEADY_RADIUS_PX = 8;
@@ -28,11 +28,11 @@ interface Grab {
 function turnRing(): SVGSVGElement {
   const reach = TURN_RADIUS + 16;
   const ticks = [0, 90, 180, 270].map((quarter) =>
-    svg('path', { class: 'mapz-turn__tick', d: `M0 ${-TURN_RADIUS}V${-TURN_RADIUS + 5}`, transform: `rotate(${quarter})` }),
+    svg('path', { class: 'wwiwiwh-turn__tick', d: `M0 ${-TURN_RADIUS}V${-TURN_RADIUS + 5}`, transform: `rotate(${quarter})` }),
   );
-  return drawing('mapz-turn__ring', { viewBox: `${-reach} ${-reach} ${2 * reach} ${2 * reach}`, width: 2 * reach, height: 2 * reach }, [
-    svg('circle', { class: 'mapz-turn__casing', r: TURN_RADIUS }),
-    svg('circle', { class: 'mapz-turn__line', r: TURN_RADIUS }),
+  return drawing('wwiwiwh-turn__ring', { viewBox: `${-reach} ${-reach} ${2 * reach} ${2 * reach}`, width: 2 * reach, height: 2 * reach }, [
+    svg('circle', { class: 'wwiwiwh-turn__casing', r: TURN_RADIUS }),
+    svg('circle', { class: 'wwiwiwh-turn__line', r: TURN_RADIUS }),
     ...ticks,
   ]);
 }
@@ -71,15 +71,15 @@ export interface Knob extends Part {
  * `group` is the element that rides on the pin.
  */
 export function createKnob({ dual, store, layer, relayout }: InstrumentContext, group: HTMLElement): Knob {
-  const letter = html('span', 'mapz-knob__letter', { 'aria-hidden': 'true' });
+  const letter = html('span', 'wwiwiwh-knob__letter', { 'aria-hidden': 'true' });
   letter.textContent = 'N';
-  const face = html('span', 'mapz-knob__face');
+  const face = html('span', 'wwiwiwh-knob__face');
   face.append(letter);
   // The slider itself is always there for the keyboard and for assistive tech. What comes and goes
   // with the ring is the part that takes the pointer, so an unseen knob never swallows a click.
-  const grip = html('span', 'mapz-knob__grip mapz-handle');
+  const grip = html('span', 'wwiwiwh-knob__grip wwiwiwh-handle');
   grip.append(face);
-  const knob = html('div', 'mapz-knob', {
+  const knob = html('div', 'wwiwiwh-knob', {
     role: 'slider',
     tabindex: 0,
     'aria-label': 'Turn Home',
@@ -88,10 +88,10 @@ export function createKnob({ dual, store, layer, relayout }: InstrumentContext, 
   });
   hugFocus(knob, CLEARANCE_PX);
   knob.append(grip);
-  const arm = html('div', 'mapz-turn__arm');
+  const arm = html('div', 'wwiwiwh-turn__arm');
   arm.append(knob);
-  const turn = html('div', 'mapz-turn');
-  turn.style.setProperty('--mapz-turn-radius', `${TURN_RADIUS}px`);
+  const turn = html('div', 'wwiwiwh-turn');
+  turn.style.setProperty('--wwiwiwh-turn-radius', `${TURN_RADIUS}px`);
   turn.append(turnRing(), arm);
   group.append(turn);
 

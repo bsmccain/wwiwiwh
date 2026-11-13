@@ -2,7 +2,7 @@ import { SPOT_ZOOM } from '../src/app/controller';
 import { distanceMeters } from '../src/geo/distance';
 import { expect, test } from './fixtures';
 import { expectPinInAddress, expectViewInAddress } from './support/address';
-import { MapzApp, type Snapshot } from './support/app';
+import { WwiwiwhApp, type Snapshot } from './support/app';
 import { expectSheetOnScreen, reachOfPage, tooSmall, touchTargets } from './support/phone-screen';
 import { savedSpot } from './support/place-search';
 import { dragWithMouse, expectPointNear, focusedElement, heightAnsweringPointer } from './support/pointer';
@@ -226,7 +226,7 @@ test.describe('choosing the spots under the pin by address', () => {
     await expectViewInAddress(app);
     await expect(page).toHaveURL(/[#&]pin=[^&]+&hs=Infinite\+Loop\+1&as=10\+Downing\+Street(&|$)/);
 
-    const fresh = new MapzApp(await context.newPage(), app.touch);
+    const fresh = new WwiwiwhApp(await context.newPage(), app.touch);
     await fresh.page.goto(page.url());
     await fresh.drawn();
     await expect(fresh.pinSentence).toHaveText('Infinite Loop 1 sits on 10 Downing Street.');
@@ -451,7 +451,7 @@ for (const phone of [
   test.describe(`on a phone ${phone.width} by ${phone.height}`, { tag: '@phone' }, () => {
     test.use({ viewport: phone });
 
-    async function expectNothingOutsideScreen(app: MapzApp): Promise<void> {
+    async function expectNothingOutsideScreen(app: WwiwiwhApp): Promise<void> {
       const reach = await reachOfPage(app.page);
       expect(reach.scrollWidth).toBeLessThanOrEqual(phone.width);
       expect(reach.scrollHeight).toBeLessThanOrEqual(phone.height);

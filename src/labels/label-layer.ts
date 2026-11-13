@@ -43,8 +43,8 @@ const FADE_MS = 120;
 /** Elements kept for reuse once their label is gone. */
 const MAX_SPARE_ELEMENTS = 48;
 
-const CLASS_NAME = 'mapz-name';
-const CLASS_ON = 'mapz-name--on';
+const CLASS_NAME = 'wwiwiwh-name';
+const CLASS_ON = 'wwiwiwh-name--on';
 
 interface LabelView {
   readonly key: string;

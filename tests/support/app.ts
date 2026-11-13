@@ -25,9 +25,9 @@ interface AppWatch {
 
 declare global {
   interface Window {
-    __mapz?: RunningApp;
+    __wwiwiwh?: RunningApp;
     /** Put there by `watchApp` before any script of the page runs. */
-    __mapzWatch: AppWatch;
+    __wwiwiwhWatch: AppWatch;
   }
 }
 
@@ -64,7 +64,7 @@ export type PinMenuRow =
 export type ToolName = 'Slide Home' | 'Measure' | 'Rings' | 'Hide Home';
 
 /**
- * Runs in the page before the app does. The app publishes itself as `window.__mapz` at the end of
+ * Runs in the page before the app does. The app publishes itself as `window.__wwiwiwh` at the end of
  * its start-up; catching that assignment is the one way to hear the map pair's events from the
  * very first one.
  */
@@ -78,8 +78,8 @@ function watchApp(): void {
       return running;
     },
   };
-  window.__mapzWatch = watch;
-  Object.defineProperty(window, '__mapz', {
+  window.__wwiwiwhWatch = watch;
+  Object.defineProperty(window, '__wwiwiwh', {
     configurable: true,
     get: () => running,
     set(started: RunningApp) {
@@ -100,7 +100,7 @@ export async function watchAppIn(context: BrowserContext): Promise<void> {
 }
 
 /** One page showing the app: how the tests open it, wait for it, read it and reach its controls. */
-export class MapzApp {
+export class WwiwiwhApp {
   readonly caption: Locator;
   readonly captionBand: Locator;
   readonly toast: Locator;
@@ -132,10 +132,10 @@ export class MapzApp {
     this.pickerLine = this.picker.locator('.picker__line');
     this.menu = page.locator('.menu');
     this.pinMenu = page.getByRole('dialog', { name: 'The pin', exact: true });
-    this.plaque = page.locator('.mapz-trip-plaque:not(.mapz-trip-plaque--draft)');
-    this.ringLabels = page.locator('.mapz-ring-label');
-    this.pinHandle = page.locator('.mapz-pin');
-    this.mapStage = page.locator('.mapz-stage');
+    this.plaque = page.locator('.wwiwiwh-trip-plaque:not(.wwiwiwh-trip-plaque--draft)');
+    this.ringLabels = page.locator('.wwiwiwh-ring-label');
+    this.pinHandle = page.locator('.wwiwiwh-pin');
+    this.mapStage = page.locator('.wwiwiwh-stage');
   }
 
   /** Opens the app, at a link when one is given, and waits for its first view to be drawn. */
@@ -161,8 +161,8 @@ export class MapzApp {
   async drawn(): Promise<void> {
     await this.page.waitForFunction(
       () => {
-        const dual = window.__mapz?.dual;
-        if (!dual || window.__mapzWatch.idles === 0) return false;
+        const dual = window.__wwiwiwh?.dual;
+        if (!dual || window.__wwiwiwhWatch.idles === 0) return false;
         return !dual.isMoving() && dual.base.loaded() && dual.overlay.loaded() && dual.getHealth().state === 'ok';
       },
       undefined,
@@ -177,7 +177,7 @@ export class MapzApp {
   async atRest(): Promise<void> {
     await this.page.waitForFunction(
       () => {
-        const dual = window.__mapz?.dual;
+        const dual = window.__wwiwiwh?.dual;
         return !!dual && !dual.isMoving() && dual.base.loaded() && dual.overlay.loaded();
       },
       undefined,
@@ -187,7 +187,7 @@ export class MapzApp {
 
   async state(): Promise<Snapshot> {
     return this.page.evaluate(() => {
-      const { store, dual } = window.__mapzWatch.app();
+      const { store, dual } = window.__wwiwiwhWatch.app();
       const state = store.get();
       const registration = dual.getRegistration();
       return {
@@ -203,13 +203,13 @@ export class MapzApp {
 
   /** How often the map pair has announced a drawn view, and every state of health it has reported, since the page loaded. */
   async heard(): Promise<{ idles: number; health: MapHealthState[] }> {
-    return this.page.evaluate(() => ({ idles: window.__mapzWatch.idles, health: [...window.__mapzWatch.health] }));
+    return this.page.evaluate(() => ({ idles: window.__wwiwiwhWatch.idles, health: [...window.__wwiwiwhWatch.health] }));
   }
 
   /** The Home position drawn under a point of the page. */
   async homeUnder(pagePoint: ScreenPoint): Promise<LngLat> {
     const origin = await this.stageOrigin();
-    return this.page.evaluate((at) => window.__mapzWatch.app().dual.unprojectHome(at), { x: pagePoint.x - origin.x, y: pagePoint.y - origin.y });
+    return this.page.evaluate((at) => window.__wwiwiwhWatch.app().dual.unprojectHome(at), { x: pagePoint.x - origin.x, y: pagePoint.y - origin.y });
   }
 
   /** The part of the address that holds the shared view. */

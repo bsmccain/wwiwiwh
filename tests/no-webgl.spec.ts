@@ -23,7 +23,7 @@ test.describe('in a browser that cannot draw the maps', () => {
   test('the legend still names the pair, with the map tools switched off', async ({ app, page }) => {
     await expect(app.legendName('home')).toHaveText('San Jose');
     await expect(app.legendName('away')).toHaveText('London');
-    await expect(page).toHaveTitle('San Jose over London at the same scale | mapz');
+    await expect(page).toHaveTitle('San Jose over London at the same scale | wwiwiwh');
     for (const tool of ['Slide Home', 'Measure', 'Rings', 'Hide Home'] as const) await expect(app.tool(tool)).toBeDisabled();
     await expect(app.copyLinkButton).toBeDisabled();
   });

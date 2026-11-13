@@ -104,11 +104,11 @@ export function createAboutDialog(deps: { overlays: Overlays }): SheetDialog {
 
   return createDialog({
     className: 'dialog--about',
-    title: 'About mapz',
+    title: 'About wwiwiwh',
     overlays: deps.overlays,
     body: [
       paragraph('about__lead', [
-        'mapz lays the street map of a place you know over a place you are curious about. Both are drawn at the same size, so your feel for distances at home carries over.',
+        'wwiwiwh (Where Was I When I Was Here) lays the street map of a place you know over a place you are curious about. Both are drawn at the same size, so your feel for distances at home carries over.',
       ]),
       paragraph('about__promise', [
         'Both maps are drawn at the same ground scale: matched at the pin, and within about 1% across a metro area. Distances are straight lines, not travel times.',

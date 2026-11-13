@@ -74,7 +74,7 @@ export function createTrip({ dual, store, ink, layer, measurer, sizes, pointers,
   }
 
   function endHandle(end: TripEnd, label: string): EndHandle {
-    const button = html('button', 'mapz-trip-end mapz-handle', { type: 'button', 'aria-label': label, hidden: '' });
+    const button = html('button', 'wwiwiwh-trip-end wwiwiwh-handle', { type: 'button', 'aria-label': label, hidden: '' });
     hugFocus(button, END_CLEARANCE_PX);
     layer.append(button);
     const { rest, unbind: unbindRest } = restHandle(button, sizes, pointers, relayout);

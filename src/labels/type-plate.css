@@ -3,7 +3,7 @@
  * Sizes and paddings here are mirrored in type-plate.ts (LETTERING), which lays the labels out
  * without measuring the DOM. Change them together.
  */
-.mapz-plate {
+.wwiwiwh-plate {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -14,7 +14,7 @@
   contain: strict;
 }
 
-.mapz-name {
+.wwiwiwh-name {
   position: absolute;
   left: 0;
   top: 0;
@@ -27,24 +27,24 @@
   will-change: transform;
 }
 
-.mapz-name--on {
+.wwiwiwh-name--on {
   opacity: 1;
 }
 
 /* A label that has just been put on the plate fades in from nothing. */
 @starting-style {
-  .mapz-name--on {
+  .wwiwiwh-name--on {
     opacity: 0;
   }
 }
 
-.mapz-name--city {
+.wwiwiwh-name--city {
   font-size: 15.5px;
   font-weight: 600;
 }
 
 /* Home: a boxed tag in Home's ink on the paper. */
-.mapz-name--home {
+.wwiwiwh-name--home {
   padding: 2.5px 5px 3px;
   border-radius: var(--radius-tag, 2px);
   background: var(--sheet);
@@ -56,7 +56,7 @@
 }
 
 /* Away: plain lettering, with a paper halo so Home's lines do not strike it through. */
-.mapz-name--away {
+.wwiwiwh-name--away {
   color: var(--away-deep);
 }
 
@@ -65,7 +65,7 @@
  * `paint-order: stroke` would do the same, but browsers that ignore paint-order on HTML text would
  * then paint the stroke over the letters.
  */
-.mapz-name--away::before {
+.wwiwiwh-name--away::before {
   content: attr(data-name);
   position: absolute;
   inset: 0;
@@ -76,7 +76,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mapz-name {
+  .wwiwiwh-name {
     transition: none;
   }
 }
@@ -88,21 +88,21 @@
  * stroke is recoloured as lettering and sticks out at both ends of the word.)
  */
 @media (forced-colors: active) {
-  .mapz-name--home,
-  .mapz-name--away {
+  .wwiwiwh-name--home,
+  .wwiwiwh-name--away {
     background: Canvas;
     color: CanvasText;
   }
 
-  .mapz-name--home {
+  .wwiwiwh-name--home {
     outline: 1.25px solid CanvasText;
   }
 
-  .mapz-name--away {
+  .wwiwiwh-name--away {
     outline: 2px solid Canvas;
   }
 
-  .mapz-name--away::before {
+  .wwiwiwh-name--away::before {
     content: none;
   }
 }

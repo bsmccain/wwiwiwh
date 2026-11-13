@@ -42,10 +42,10 @@ export function drawing(className: string, attributes: Attributes, children: rea
 /**
  * Gives a focusable element a focus ring `across` px wide overall: one that hugs what is drawn, not
  * the much larger pointer target, and so stays inside the box that place names keep clear of.
- * The stylesheet turns --mapz-focus-across into the outline's offset.
+ * The stylesheet turns --wwiwiwh-focus-across into the outline's offset.
  */
 export function hugFocus(element: HTMLElement, across: number): void {
-  element.style.setProperty('--mapz-focus-across', `${across}px`);
+  element.style.setProperty('--wwiwiwh-focus-across', `${across}px`);
 }
 
 const written = new WeakMap<Element, Map<string, string>>();

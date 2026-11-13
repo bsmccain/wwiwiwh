@@ -4,7 +4,7 @@ import { html, px, setAttribute, setHidden, setText, setTransform, svg } from '.
 import { distanceBetween, plaqueCenter, plaqueFits, rotatedBoxBounds, uprightAngle, type PlaquePlacement, type StageSize } from './geometry';
 import { PIN_CLEARANCE_PX } from './pin';
 
-/** The plaque's lettering and box. Keep in step with .mapz-trip-plaque in instruments.css. */
+/** The plaque's lettering and box. Keep in step with .wwiwiwh-trip-plaque in instruments.css. */
 const PLAQUE_FONT = `600 13px ${PLATE_FAMILY}`;
 const PLAQUE_HEIGHT_PX = 20;
 const PLAQUE_PADDING_X_PX = 7;
@@ -35,10 +35,10 @@ export interface TripLine {
  * a plaque set along it. Drawn for the trip itself and, dashed, for the rubber band while measuring.
  */
 export function createTripLine(ink: SVGSVGElement, layer: HTMLElement, measurer: TextMeasurer, kind: 'trip' | 'draft'): TripLine {
-  const lines = [svg('line', { class: 'mapz-trip__casing' }), svg('line', { class: 'mapz-trip__line' })];
-  const ends = [svg('circle', { class: 'mapz-trip__end', r: END_RADIUS }), svg('circle', { class: 'mapz-trip__end', r: END_RADIUS })] as const;
-  const group = svg('g', { class: `mapz-trip mapz-trip--${kind}`, hidden: '' }, [...lines, ...ends]);
-  const plaque = html('div', `mapz-trip-plaque mapz-trip-plaque--${kind}`, { 'aria-hidden': 'true', hidden: '' });
+  const lines = [svg('line', { class: 'wwiwiwh-trip__casing' }), svg('line', { class: 'wwiwiwh-trip__line' })];
+  const ends = [svg('circle', { class: 'wwiwiwh-trip__end', r: END_RADIUS }), svg('circle', { class: 'wwiwiwh-trip__end', r: END_RADIUS })] as const;
+  const group = svg('g', { class: `wwiwiwh-trip wwiwiwh-trip--${kind}`, hidden: '' }, [...lines, ...ends]);
+  const plaque = html('div', `wwiwiwh-trip-plaque wwiwiwh-trip-plaque--${kind}`, { 'aria-hidden': 'true', hidden: '' });
   ink.append(group);
   layer.append(plaque);
 

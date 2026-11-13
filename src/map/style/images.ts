@@ -57,7 +57,7 @@ const PLATES: Readonly<Record<Sheet, Plate>> = {
   },
 };
 
-const ID_PREFIX = 'mapz-route';
+const ID_PREFIX = 'wwiwiwh-route';
 const THEMES: readonly Theme[] = ['light', 'dark'];
 const SHEETS: readonly Sheet[] = ['away', 'home'];
 
@@ -85,7 +85,7 @@ function addRouteImage(map: MapLibreMap, id: string): void {
   canvas.height = plate.height * ratio;
   const context = canvas.getContext('2d');
   if (!context) {
-    console.warn(`mapz: no 2D canvas, so route numbers on the ${known.sheet} sheet are drawn without their plate.`);
+    console.warn(`wwiwiwh: no 2D canvas, so route numbers on the ${known.sheet} sheet are drawn without their plate.`);
     return;
   }
   context.scale(ratio, ratio);

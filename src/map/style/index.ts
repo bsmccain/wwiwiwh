@@ -31,10 +31,10 @@ function sheetStyle(name: string, layers: LayerSpecification[]): StyleSpecificat
 export const createStyles: StyleFactory = (theme) => {
   const palette = paletteFor(theme);
   return {
-    base: sheetStyle(`mapz away, ${theme}`, awayLayers(palette, theme)),
+    base: sheetStyle(`wwiwiwh away, ${theme}`, awayLayers(palette, theme)),
     overlay: (zoomOffset) => {
       const offset = Math.round(zoomOffset / ZOOM_OFFSET_STEP) * ZOOM_OFFSET_STEP;
-      return sheetStyle(`mapz home, ${theme}`, homeLayers(palette, theme, offset));
+      return sheetStyle(`wwiwiwh home, ${theme}`, homeLayers(palette, theme, offset));
     },
     prepare: (map, sheet) => registerRouteImages(map, sheet, theme),
   };

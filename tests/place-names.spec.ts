@@ -10,8 +10,8 @@ test.describe('with tiles that carry place names', () => {
 
   test('the names are lettered on both sheets', async ({ page }) => {
     const anyTown = new RegExp(`^(${ANY_TOWN})$`);
-    await expect(page.locator('.mapz-name--away.mapz-name--on', { hasText: anyTown }).first()).toBeVisible();
-    await expect(page.locator('.mapz-name--home.mapz-name--on', { hasText: anyTown }).first()).toBeVisible();
+    await expect(page.locator('.wwiwiwh-name--away.wwiwiwh-name--on', { hasText: anyTown }).first()).toBeVisible();
+    await expect(page.locator('.wwiwiwh-name--home.wwiwiwh-name--on', { hasText: anyTown }).first()).toBeVisible();
   });
 
   test('the trip is described by where it lands on Away', async ({ app }) => {
@@ -22,10 +22,10 @@ test.describe('with tiles that carry place names', () => {
   });
 
   test('no name lies on the pin', async ({ app, page }) => {
-    await expect(page.locator('.mapz-name--on').first()).toBeVisible();
+    await expect(page.locator('.wwiwiwh-name--on').first()).toBeVisible();
     const pin = await app.onPage((await app.state()).pin);
 
-    const namesOnThePin = await page.locator('.mapz-name--on').evaluateAll(
+    const namesOnThePin = await page.locator('.wwiwiwh-name--on').evaluateAll(
       (names, at) =>
         names
           .map((name) => name.getBoundingClientRect())

@@ -1,8 +1,8 @@
 import type { Locator } from '@playwright/test';
 import { expect, test } from './fixtures';
-import type { MapzApp } from './support/app';
+import type { WwiwiwhApp } from './support/app';
 
-function singleKeysChoice(app: MapzApp, word: 'On' | 'Off'): Locator {
+function singleKeysChoice(app: WwiwiwhApp, word: 'On' | 'Off'): Locator {
   return app.menu.getByRole('group', { name: 'Single-key shortcuts' }).getByRole('radio', { name: word, exact: true });
 }
 

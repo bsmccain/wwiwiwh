@@ -144,7 +144,7 @@ describe('rememberSpot and recentSpotsNear', () => {
     rememberSpot(downingStreet);
     rememberSpot(heathrow);
     expect(recentSpotsNear(LONDON, 6)).toEqual([heathrow, downingStreet]);
-    expect([...storage.items.keys()]).toEqual(['mapz.recent-spots']);
+    expect([...storage.items.keys()]).toEqual(['wwiwiwh.recent-spots']);
   });
 
   it('work as "nothing yet" when localStorage does not exist', () => {

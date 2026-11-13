@@ -129,7 +129,7 @@ test.describe('measuring with a mouse and a keyboard', { tag: '@desktop' }, () =
   });
 
   test('M, Enter, a move of the map and Enter draw a trip from the keyboard', async ({ app, page }) => {
-    const centreMark = page.locator('.mapz-measure-center');
+    const centreMark = page.locator('.wwiwiwh-measure-center');
 
     await page.keyboard.press('m');
     await expect(app.caption).toHaveText('Press Enter to set the start at the centre mark.');

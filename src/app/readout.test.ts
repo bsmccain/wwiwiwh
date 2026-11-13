@@ -169,6 +169,6 @@ describe('sentences', () => {
   });
 
   it('titles the page after the pair', () => {
-    expect(pageTitle(sanJose, london)).toBe('San Jose over London at the same scale | mapz');
+    expect(pageTitle(sanJose, london)).toBe('San Jose over London at the same scale | wwiwiwh');
   });
 });

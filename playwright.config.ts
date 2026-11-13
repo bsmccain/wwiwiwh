@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = Number(process.env.MAPZ_E2E_PORT ?? 4317);
+const PORT = Number(process.env.WWIWIWH_E2E_PORT ?? 4317);
 
 // Headless Chromium has no GPU here, so WebGL runs on SwiftShader.
 const launchOptions = {
@@ -10,7 +10,7 @@ const launchOptions = {
 /**
  * Two projects run the same specs: a desktop window with a mouse and a keyboard, and a phone with
  * fingers. A test tagged @desktop or @phone runs in that project only; untagged tests run in both.
- * The one test tagged @live loads from the public tile service and is skipped unless MAPZ_LIVE=1.
+ * The one test tagged @live loads from the public tile service and is skipped unless WWIWIWH_LIVE=1.
  */
 export default defineConfig({
   testDir: './tests',

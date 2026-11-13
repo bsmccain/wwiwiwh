@@ -9,7 +9,7 @@ const PHONES = [
 
 /** The collar's buttons, and the controls that stand on the map. */
 function controlsOnThePage(page: Page): Locator {
-  return page.locator('.collar button, .caption button, .zoom__button, .stage__credit, .hint__close, .mapz-handle');
+  return page.locator('.collar button, .caption button, .zoom__button, .stage__credit, .hint__close, .wwiwiwh-handle');
 }
 
 for (const phone of PHONES) {

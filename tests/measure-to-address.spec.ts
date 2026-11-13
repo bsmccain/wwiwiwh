@@ -4,7 +4,7 @@ import { baseToOverlay, overlayToBase } from '../src/geo/registration';
 import type { LngLat } from '../src/geo/types';
 import { formatDistance } from '../src/geo/units';
 import { expect, test } from './fixtures';
-import { tripOf, type MapzApp } from './support/app';
+import { tripOf, type WwiwiwhApp } from './support/app';
 import { savedSpot, savedSpots } from './support/place-search';
 import { expectPointNear } from './support/pointer';
 import { ANY_TOWN, tileOfTowns } from './support/towns';
@@ -43,7 +43,7 @@ const BY_A_TOWN = `.*(${ANY_TOWN})`;
  * The caption's sentence about a trip, as a pattern: in full on wide screens, in short on narrow
  * ones. `onHome` and `onAway` are patterns for the words that say where it runs on each place.
  */
-function tripCaption(app: MapzApp, meters: number, where: { readonly onHome: string; readonly onAway: string }): RegExp {
+function tripCaption(app: WwiwiwhApp, meters: number, where: { readonly onHome: string; readonly onAway: string }): RegExp {
   const literal = (text: string): string => text.replace(/[.()]/g, '\\$&');
   const miles = literal(formatDistance(meters, 'mi'));
   if (app.touch) return new RegExp(`^${where.onHome} is ${miles} in a straight line\\. On London: ${where.onAway}\\.$`);
@@ -242,7 +242,7 @@ test.describe('measuring from the pin to an address', () => {
     // What is listed is never where the line starts. Should the pin be moved onto a listed spot
     // behind the list all the same, picking that spot draws nothing.
     await page.evaluate((spot) => {
-      const { dual } = window.__mapzWatch.app();
+      const { dual } = window.__wwiwiwhWatch.app();
       dual.setRegistration({ ...dual.getRegistration(), baseAnchor: spot });
     }, DOWNING_HOUSE);
     await app.pickerOption('Downing House').click();

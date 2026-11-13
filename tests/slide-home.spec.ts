@@ -173,7 +173,7 @@ test.describe('the pin handle', () => {
   test('dragging the pin is announced as one slide, from its first move to the release', { tag: '@desktop' }, async ({ app, page }) => {
     const gestures = await page.evaluateHandle(() => {
       const heard: string[] = [];
-      window.__mapzWatch.app().dual.on('gesture', ({ kind, phase }) => heard.push(`${kind} ${phase}`));
+      window.__wwiwiwhWatch.app().dual.on('gesture', ({ kind, phase }) => heard.push(`${kind} ${phase}`));
       return heard;
     });
     const from = await app.onPage((await app.state()).pin);
@@ -183,10 +183,10 @@ test.describe('the pin handle', () => {
     await page.mouse.down();
     await page.mouse.move(from.x + 60, from.y + 40, { steps: 8 });
     expect(await gestures.jsonValue()).toEqual(['slide start']);
-    await expect(page.locator('.mapz-stage')).toHaveClass(/mapz-stage--sliding/);
+    await expect(page.locator('.wwiwiwh-stage')).toHaveClass(/wwiwiwh-stage--sliding/);
 
     await page.mouse.up();
     expect(await gestures.jsonValue()).toEqual(['slide start', 'slide end']);
-    await expect(page.locator('.mapz-stage')).not.toHaveClass(/mapz-stage--sliding/);
+    await expect(page.locator('.wwiwiwh-stage')).not.toHaveClass(/wwiwiwh-stage--sliding/);
   });
 });

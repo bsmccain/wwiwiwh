@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import type { ScreenPoint } from '../src/map/contracts';
 import { expect, test } from './fixtures';
 import { expectPinInAddress } from './support/address';
-import { tripOf, type MapzApp, type Snapshot } from './support/app';
+import { tripOf, type WwiwiwhApp, type Snapshot } from './support/app';
 import type { Fingers } from './support/fingers';
 import { letReleasesBeLostIn, loseNext, moveMouseWithNoButtonDown, releasesStillToLose } from './support/lost-release';
 import { Pen } from './support/pen';
@@ -21,7 +21,7 @@ import { dragFromHere, dragWithMouse, expectPointNear, middleOf } from './suppor
  * mouse, or a pen in the air, with no button down.
  */
 
-const HOME_BEING_MOVED = /mapz-stage--(sliding|turning)/;
+const HOME_BEING_MOVED = /wwiwiwh-stage--(sliding|turning)/;
 /**
  * The opening pair with the stage kept clear of a trip: a trip's ends are handles too, and a press
  * that happened to land on one would be a different test.
@@ -50,11 +50,11 @@ function expectSlidByThePin(after: Snapshot, before: Snapshot): void {
 }
 
 /** No slide or turn of Home is in progress, no handle is held, and Away is not left locked against drags. */
-async function expectNothingHeld(app: MapzApp): Promise<void> {
+async function expectNothingHeld(app: WwiwiwhApp): Promise<void> {
   await expect(app.mapStage).not.toHaveClass(HOME_BEING_MOVED);
-  await expect(app.page.locator('.mapz-handle.is-held')).toHaveCount(0);
+  await expect(app.page.locator('.wwiwiwh-handle.is-held')).toHaveCount(0);
   const { awayAnswersDrags, mode } = await app.page.evaluate(() => {
-    const { dual, store } = window.__mapzWatch.app();
+    const { dual, store } = window.__wwiwiwhWatch.app();
     return { awayAnswersDrags: dual.base.dragPan.isEnabled(), mode: store.get().mode };
   });
   // With Slide Home on every drag is Home's, so Away is kept from panning for as long as the mode lasts.
@@ -62,7 +62,7 @@ async function expectNothingHeld(app: MapzApp): Promise<void> {
 }
 
 /** A spot of the stage well clear of the pin, with room to drag from it, on the page. */
-async function spotClearOfPin(app: MapzApp): Promise<ScreenPoint> {
+async function spotClearOfPin(app: WwiwiwhApp): Promise<ScreenPoint> {
   const { pin, stage } = await app.state();
   return app.onPage({
     x: Math.round(stage.width * (pin.x > stage.width / 2 ? 0.25 : 0.75)),
@@ -71,7 +71,7 @@ async function spotClearOfPin(app: MapzApp): Promise<ScreenPoint> {
 }
 
 /** With no button down the mouse wanders across the map, and Home stays where it is. */
-async function expectHomeStaysWhileMouseWanders(app: MapzApp, from: ScreenPoint): Promise<void> {
+async function expectHomeStaysWhileMouseWanders(app: WwiwiwhApp, from: ScreenPoint): Promise<void> {
   const before = await app.state();
   for (let step = 1; step <= 3; step++) await app.page.mouse.move(from.x + step * 40, from.y - step * 25);
   const after = await app.state();
@@ -80,7 +80,7 @@ async function expectHomeStaysWhileMouseWanders(app: MapzApp, from: ScreenPoint)
 }
 
 /** An ordinary drag on open map moves both maps, and Shift+drag slides Home and lets go of it again. */
-async function expectDragsWorkAsEver(app: MapzApp): Promise<void> {
+async function expectDragsWorkAsEver(app: WwiwiwhApp): Promise<void> {
   const { page } = app;
   const beforePan = await app.state();
   const panFrom = await spotClearOfPin(app);
@@ -104,7 +104,7 @@ async function expectDragsWorkAsEver(app: MapzApp): Promise<void> {
  * mouse is left.
  */
 async function expectDragsFromHerePan(
-  app: MapzApp,
+  app: WwiwiwhApp,
   here: ScreenPoint,
   drags: readonly ScreenPoint[],
   carried: () => Promise<ScreenPoint> = () => app.pinOnPage(),
@@ -383,7 +383,7 @@ test.describe('with Slide Home on', () => {
     await expect(app.pinHandle).toHaveCSS('pointer-events', 'none');
     const slides = await page.evaluateHandle(() => {
       const heard: string[] = [];
-      window.__mapzWatch.app().dual.on('gesture', ({ kind, phase, onMap }) => heard.push(`${kind} ${phase} ${onMap ? 'on the map' : 'by a handle'}`));
+      window.__wwiwiwhWatch.app().dual.on('gesture', ({ kind, phase, onMap }) => heard.push(`${kind} ${phase} ${onMap ? 'on the map' : 'by a handle'}`));
       return heard;
     });
     const before = await app.state();
@@ -407,7 +407,7 @@ test.describe('with Slide Home on', () => {
 
 test.describe('a slide with a finger leaves the pin where the finger lifted', { tag: '@phone' }, () => {
   /** Finger drags from where the slide ended, one after another: each moves both maps. */
-  async function expectDragsFromThePinPan(app: MapzApp, fingers: Fingers): Promise<void> {
+  async function expectDragsFromThePinPan(app: WwiwiwhApp, fingers: Fingers): Promise<void> {
     let finger = await app.pinOnPage();
     for (const by of [
       { x: 60, y: -80 },
@@ -460,16 +460,16 @@ test.describe('a slide with a finger leaves the pin where the finger lifted', { 
 interface DragPath {
   readonly name: string;
   /** Presses and drags, and leaves the button down. Returns where the mouse is. */
-  begin(app: MapzApp): Promise<ScreenPoint>;
+  begin(app: WwiwiwhApp): Promise<ScreenPoint>;
   /** Puts the app back in browse mode, where the path was walked in another. */
-  leave?(app: MapzApp): Promise<void>;
+  leave?(app: WwiwiwhApp): Promise<void>;
 }
 
 /**
  * Brings the mouse to the pin from well clear of it, as someone who means to use the pin does. (A pin
  * that came to the mouse lets presses through to the map until then.) Returns where the pin is.
  */
-async function goToPin(app: MapzApp): Promise<ScreenPoint> {
+async function goToPin(app: WwiwiwhApp): Promise<ScreenPoint> {
   const pin = await app.pinOnPage();
   await app.comeTo(pin);
   await app.page.mouse.move(pin.x, pin.y, FEW_STEPS);
@@ -543,7 +543,7 @@ const KNOB_DRAG: DragPath = {
   async begin(app) {
     // The knob comes up when the mouse is on the pin.
     await goToPin(app);
-    const grip = app.page.locator('.mapz-knob__grip');
+    const grip = app.page.locator('.wwiwiwh-knob__grip');
     await expect(grip).toBeVisible();
     const knob = await middleOf(grip);
     const mouse = { x: knob.x + 50, y: knob.y + 30 };
@@ -687,7 +687,7 @@ test.describe('a pen whose lift never arrives', { tag: '@desktop' }, () => {
       await expect(app.pinHandle).toHaveCSS('pointer-events', 'auto');
       await pen.down();
       await pen.moveTo(to, FEW_STEPS.steps);
-      await expect(page.locator('.mapz-handle.is-held')).toHaveCount(1);
+      await expect(page.locator('.wwiwiwh-handle.is-held')).toHaveCount(1);
 
       await expectLetGoOnceInTheAir(to);
     });
@@ -713,7 +713,7 @@ test.describe('the sequence in the report', { tag: '@desktop' }, () => {
    * Once the button is up: Away has not moved or zoomed, a drag from where the mouse rests moves both
    * maps, and nothing follows the mouse when it moves on with no button down.
    */
-  async function expectNotStuck(app: MapzApp, start: Snapshot, released: ScreenPoint): Promise<void> {
+  async function expectNotStuck(app: WwiwiwhApp, start: Snapshot, released: ScreenPoint): Promise<void> {
     await expectNothingHeld(app);
     await app.drawn();
     const slid = await app.state();
@@ -787,7 +787,7 @@ test.describe('what else could keep hold of Home', { tag: '@desktop' }, () => {
         told.thrown++;
         throw new Error('a listener gave up');
       };
-      const { dual } = window.__mapzWatch.app();
+      const { dual } = window.__wwiwiwhWatch.app();
       dual.on('gesture', ({ phase }) => {
         if (told.when === 'the start of the slide' && phase === 'start') giveUp();
       });
@@ -876,7 +876,7 @@ test.describe('a finger whose lift never arrives', { tag: '@phone' }, () => {
   });
 
   /** A finger drag on open map, clear of the pin, moves both maps. */
-  async function expectFingerPans(app: MapzApp, fingers: Fingers): Promise<void> {
+  async function expectFingerPans(app: WwiwiwhApp, fingers: Fingers): Promise<void> {
     const before = await app.state();
     const from = await spotClearOfPin(app);
     await fingers.dragToRest(from, { x: from.x - 50, y: from.y - 40 }, FINGER_STEPS);
@@ -887,7 +887,7 @@ test.describe('a finger whose lift never arrives', { tag: '@phone' }, () => {
     const pin = await app.pinOnPage();
     await app.comeTo(pin);
     await fingers.dragAndHold(pin, { x: pin.x + 60, y: pin.y + 50 }, FINGER_STEPS);
-    await expect(page.locator('.mapz-handle.is-held')).toHaveCount(1);
+    await expect(page.locator('.wwiwiwh-handle.is-held')).toHaveCount(1);
     await loseNext(page, 'pointerup', 'lostpointercapture');
     await fingers.lift();
     expect(await releasesStillToLose(page)).toEqual([]);

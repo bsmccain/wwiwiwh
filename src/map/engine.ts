@@ -55,10 +55,10 @@ const STEP_MS = 200;
  * for by the person (a button, a key), so `viewchange` can say which. Moves MapLibre makes for input
  * on the map itself carry no mark.
  */
-const BY_APP = { mapzBy: 'app' } as const;
-const AS_USER = { mapzBy: 'user' } as const;
+const BY_APP = { wwiwiwhBy: 'app' } as const;
+const AS_USER = { wwiwiwhBy: 'user' } as const;
 type MoveTag = typeof BY_APP | typeof AS_USER;
-type TaggedMove = MapMovementEvent & { readonly mapzBy?: MoveTag['mapzBy']; readonly mapzStretch?: number } & Partial<typeof BY_WHEEL_STEP>;
+type TaggedMove = MapMovementEvent & { readonly wwiwiwhBy?: MoveTag['wwiwiwhBy']; readonly wwiwiwhStretch?: number } & Partial<typeof BY_WHEEL_STEP>;
 
 const moveTag = (options: MoveOptions | undefined): MoveTag => (options?.asUser ? AS_USER : BY_APP);
 
@@ -71,7 +71,7 @@ interface MoveUnderWay {
   stretch: number;
 }
 
-const GESTURE_CLASS = { slide: 'mapz-stage--sliding', turn: 'mapz-stage--turning' } as const;
+const GESTURE_CLASS = { slide: 'wwiwiwh-stage--sliding', turn: 'wwiwiwh-stage--turning' } as const;
 
 type ListenerWrap = <Event>(handler: (event: Event) => void) => (event: Event) => void;
 const asIs: ListenerWrap = (handler) => handler;
@@ -88,7 +88,7 @@ function prepareWorkers(): void {
 
 function sheetElement(sheet: Sheet): HTMLDivElement {
   const element = document.createElement('div');
-  element.className = `mapz-sheet mapz-sheet--${sheet}`;
+  element.className = `wwiwiwh-sheet wwiwiwh-sheet--${sheet}`;
   return element;
 }
 
@@ -142,7 +142,7 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
   prepareWorkers();
 
   const stage = document.createElement('div');
-  stage.className = 'mapz-stage';
+  stage.className = 'wwiwiwh-stage';
   const awayElement = sheetElement('away');
   const homeElement = sheetElement('home');
   // Home never takes input or focus; Away's canvas speaks for the pair.
@@ -306,7 +306,7 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
       'error',
       wrap((event) => {
         // Loading failures are followed and mended. Anything else is a fault in a style or in this code.
-        if (!recovery.error(sheet, event)) console.warn(`[mapz] ${sheet === 'away' ? 'Away' : 'Home'} map:`, event.error);
+        if (!recovery.error(sheet, event)) console.warn(`[wwiwiwh] ${sheet === 'away' ? 'Away' : 'Home'} map:`, event.error);
       }),
     );
   }
@@ -348,18 +348,18 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
     'moveend',
     insideAway((event: TaggedMove) => {
       // An earlier stretch of the move under way has ended because the move was aimed again. The move goes on.
-      if (underWay && event.mapzStretch !== undefined && event.mapzStretch !== underWay.stretch) return;
+      if (underWay && event.wwiwiwhStretch !== undefined && event.wwiwiwhStretch !== underWay.stretch) return;
       underWay = null;
       zoomTarget = null;
       // A turn of the wheel under reduced motion: the view has come to rest when the wheel has.
-      if (event.mapzWheelStep) return;
+      if (event.wwiwiwhWheelStep) return;
       wheelSteps.forget();
       const center = base.getCenter();
       const from = moveStartedAt;
       const stayedPut = from !== null && from.lng === center.lng && from.lat === center.lat && from.zoom === base.getZoom();
       // MapLibre reports some input that changes nothing as a move (Shift+arrow with rotation off, for one).
-      if (!event.mapzBy && stayedPut) return;
-      events.emit('viewchange', { view: getView(), byUser: event.mapzBy !== 'app' });
+      if (!event.wwiwiwhBy && stayedPut) return;
+      events.emit('viewchange', { view: getView(), byUser: event.wwiwiwhBy !== 'app' });
     }),
   );
 
@@ -394,7 +394,7 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
       return;
     }
     const stretch = ++stretches;
-    base.easeTo({ center, zoom, duration: plan.duration, easing: easeOut }, { ...tag, mapzStretch: stretch });
+    base.easeTo({ center, zoom, duration: plan.duration, easing: easeOut }, { ...tag, wwiwiwhStretch: stretch });
     underWay = { aim, tag, arrivesAt: performance.now() + plan.duration, stretch };
   }
 
@@ -411,7 +411,7 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
     const zoom = clamp(view.zoom, ZOOM_RANGE.min, ZOOM_RANGE.max);
     move.stretch = ++stretches;
     const duration = Math.max(0, move.arrivesAt - performance.now());
-    base.easeTo({ center, zoom, duration, easing: easeOut }, { ...move.tag, mapzStretch: move.stretch });
+    base.easeTo({ center, zoom, duration, easing: easeOut }, { ...move.tag, wwiwiwhStretch: move.stretch });
   }
 
   // --- Home on its own ---
@@ -607,16 +607,16 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
       slideMode = on;
       // A slide or twist in progress ends where it is: its pointers no longer mean "Home".
       if (!on) gestures.finish();
-      stage.classList.toggle('mapz-stage--slide', on);
+      stage.classList.toggle('wwiwiwh-stage--slide', on);
       updatePanLock();
     },
     setHomeHidden(hidden) {
-      stage.classList.toggle('mapz-stage--home-hidden', hidden);
+      stage.classList.toggle('wwiwiwh-stage--home-hidden', hidden);
     },
     setMeasureMode(on) {
       if (on === measureMode) return;
       measureMode = on;
-      stage.classList.toggle('mapz-stage--measure', on);
+      stage.classList.toggle('wwiwiwh-stage--measure', on);
       // Taps and clicks place trip ends while measuring, so two quick ones must not zoom as well.
       // (The one handler answers both the double click and the double tap.)
       if (on) base.doubleClickZoom.disable();

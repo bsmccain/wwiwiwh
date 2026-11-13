@@ -1,6 +1,6 @@
 import { distanceMeters } from '../src/geo/distance';
 import { expect, test } from './fixtures';
-import { tripOf, type MapzApp } from './support/app';
+import { tripOf, type WwiwiwhApp } from './support/app';
 import { expectPointNear } from './support/pointer';
 
 const LONDON = { lat: 51.5073, lng: -0.1276 };
@@ -8,7 +8,7 @@ const TOKYO = { lat: 35.6812, lng: 139.7671 };
 const PALO_ALTO = { lat: 37.4443, lng: -122.1598 };
 
 /** The view is on this place, and the pin is in the middle of it. */
-async function expectViewOn(app: MapzApp, place: { lat: number; lng: number }): Promise<void> {
+async function expectViewOn(app: WwiwiwhApp, place: { lat: number; lng: number }): Promise<void> {
   await app.drawn();
   const { camera, pin, stage } = await app.state();
   expect(distanceMeters(camera.center, place)).toBeLessThan(3_000);
@@ -26,7 +26,7 @@ test.describe('choosing places', () => {
 
     await expect(app.picker).toHaveCount(0);
     await expect(app.legendName('away')).toHaveText('Tokyo');
-    await expect(page).toHaveTitle('San Jose over Tokyo at the same scale | mapz');
+    await expect(page).toHaveTitle('San Jose over Tokyo at the same scale | wwiwiwh');
     await expectViewOn(app, TOKYO);
     const { reg } = await app.state();
     expect(distanceMeters(reg.baseAnchor, TOKYO)).toBeLessThan(50);
@@ -101,7 +101,7 @@ test.describe('Swap', () => {
 
     await expect(app.legendName('home')).toHaveText('London');
     await expect(app.legendName('away')).toHaveText('San Jose');
-    await expect(page).toHaveTitle('London over San Jose at the same scale | mapz');
+    await expect(page).toHaveTitle('London over San Jose at the same scale | wwiwiwh');
   });
 
   test('keeps the trip on the same ground', async ({ app }) => {
@@ -182,7 +182,7 @@ test.describe('Back and Forward', () => {
     const expectPair = async (home: string, away: string): Promise<void> => {
       await expect(app.legendName('home')).toHaveText(home);
       await expect(app.legendName('away')).toHaveText(away);
-      await expect(page).toHaveTitle(`${home} over ${away} at the same scale | mapz`);
+      await expect(page).toHaveTitle(`${home} over ${away} at the same scale | wwiwiwh`);
     };
 
     await app.pickPlace('away', 'Tokyo');

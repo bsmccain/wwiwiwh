@@ -181,5 +181,5 @@ export function spansToText(spans: readonly Span[]): string {
 }
 
 export function pageTitle(home: Place, away: Place): string {
-  return `${home.name} over ${away.name} at the same scale | mapz`;
+  return `${home.name} over ${away.name} at the same scale | wwiwiwh`;
 }

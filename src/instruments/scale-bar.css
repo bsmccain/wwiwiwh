@@ -1,34 +1,34 @@
 /* The two-unit bar scale. It takes its colour from the text colour of wherever it is placed. */
-.mapz-scale-bar {
+.wwiwiwh-scale-bar {
   display: block;
   overflow: visible;
   color: inherit;
 }
 
-.mapz-scale-bar__outline {
+.wwiwiwh-scale-bar__outline {
   fill: none;
   stroke: currentColor;
   stroke-width: 1;
 }
 
-.mapz-scale-bar__fill {
+.wwiwiwh-scale-bar__fill {
   fill: currentColor;
 }
 
-.mapz-scale-bar__tick {
+.wwiwiwh-scale-bar__tick {
   fill: none;
   stroke: currentColor;
   stroke-width: 1;
 }
 
 /* Keep in step with NUMERAL_FONT in scale-bar.ts. */
-.mapz-scale-bar text {
+.wwiwiwh-scale-bar text {
   fill: currentColor;
   font: 500 11.5px var(--font-plate);
   font-variant-numeric: tabular-nums;
 }
 
-.mapz-scale-bar [hidden] {
+.wwiwiwh-scale-bar [hidden] {
   display: none;
 }
 
@@ -37,7 +37,7 @@
  * system has recoloured. It is pointed at the system's text colour instead.
  */
 @media (forced-colors: active) {
-  .mapz-scale-bar {
+  .wwiwiwh-scale-bar {
     color: CanvasText;
   }
 }

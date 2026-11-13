@@ -36,7 +36,7 @@ import { createToasts } from './ui/toasts';
 declare global {
   interface Window {
     /** The running app, for end-to-end tests. */
-    __mapz?: { store: Store<AppState>; dual: DualMap; controller: Controller; typePlate: TypePlate; instruments: Instruments };
+    __wwiwiwh?: { store: Store<AppState>; dual: DualMap; controller: Controller; typePlate: TypePlate; instruments: Instruments };
   }
 }
 
@@ -358,7 +358,7 @@ function start(root: HTMLElement): void {
     releaseHideHome: () => tools.holdHideKey(false),
   });
 
-  window.__mapz = { store, dual, controller, typePlate, instruments };
+  window.__wwiwiwh = { store, dual, controller, typePlate, instruments };
 }
 
 const root = document.querySelector<HTMLElement>('#app');

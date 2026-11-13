@@ -2,7 +2,7 @@
  * The map pair: Away (the base sheet) below, Home (the overprint) above, both filling the stage.
  * Home is composited with plain alpha: it simply draws on top.
  */
-.mapz-stage {
+.wwiwiwh-stage {
   position: relative;
   inline-size: 100%;
   block-size: 100%;
@@ -18,17 +18,17 @@
  * one-class rule would tie with it and lose whenever MapLibre's stylesheet loads later, collapsing
  * the sheet to zero height.
  */
-.mapz-stage > .mapz-sheet {
+.wwiwiwh-stage > .wwiwiwh-sheet {
   position: absolute;
   inset: 0;
 }
 
-.mapz-stage > .mapz-sheet--home {
+.wwiwiwh-stage > .wwiwiwh-sheet--home {
   pointer-events: none;
   transition: opacity var(--dur-fast, 120ms) linear;
 }
 
-.mapz-stage--home-hidden > .mapz-sheet--home {
+.wwiwiwh-stage--home-hidden > .wwiwiwh-sheet--home {
   opacity: 0;
 }
 
@@ -36,7 +36,7 @@
  * Away's canvas takes keyboard focus (arrow keys, + and -). The ring is drawn just inside the stage,
  * where an outset ring would be clipped.
  */
-.mapz-stage .maplibregl-canvas:focus-visible {
+.wwiwiwh-stage .maplibregl-canvas:focus-visible {
   outline: 2px solid var(--key, currentColor);
   outline-offset: -4px;
 }
@@ -46,12 +46,12 @@
  * The browser would claim a one-finger drag as a scroll and cancel the slide after a few pixels.
  * These selectors carry more classes than MapLibre's own touch-action rules, so they win.
  */
-.mapz-stage.mapz-stage--slide .maplibregl-canvas-container.maplibregl-interactive,
-.mapz-stage.mapz-stage--slide .maplibregl-canvas-container.maplibregl-interactive .maplibregl-canvas {
+.wwiwiwh-stage.wwiwiwh-stage--slide .maplibregl-canvas-container.maplibregl-interactive,
+.wwiwiwh-stage.wwiwiwh-stage--slide .maplibregl-canvas-container.maplibregl-interactive .maplibregl-canvas {
   touch-action: none;
 }
 
-.mapz-stage.mapz-stage--slide .maplibregl-canvas-container.maplibregl-interactive {
+.wwiwiwh-stage.wwiwiwh-stage--slide .maplibregl-canvas-container.maplibregl-interactive {
   /* Not the open hand of ordinary panning: in this mode a drag moves Home alone. */
   cursor: move;
 }
@@ -60,17 +60,17 @@
  * Measuring: a click places an end of the trip, so the pointer is a crosshair, pressed or not. (One
  * class more than MapLibre's own `:active` rule, which would show a closed hand on every click.)
  */
-.mapz-stage.mapz-stage--measure .maplibregl-canvas-container.maplibregl-interactive {
+.wwiwiwh-stage.wwiwiwh-stage--measure .maplibregl-canvas-container.maplibregl-interactive {
   cursor: crosshair;
 }
 
-.mapz-stage.mapz-stage--sliding .maplibregl-canvas-container.maplibregl-interactive,
-.mapz-stage.mapz-stage--turning .maplibregl-canvas-container.maplibregl-interactive {
+.wwiwiwh-stage.wwiwiwh-stage--sliding .maplibregl-canvas-container.maplibregl-interactive,
+.wwiwiwh-stage.wwiwiwh-stage--turning .maplibregl-canvas-container.maplibregl-interactive {
   cursor: grabbing;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mapz-stage > .mapz-sheet--home {
+  .wwiwiwh-stage > .wwiwiwh-sheet--home {
     transition: none;
   }
 }

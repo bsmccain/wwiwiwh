@@ -1,10 +1,10 @@
 <img src="assets/icon.svg" width="64" height="64" alt="">
 
-# mapz
+# wwiwiwh
 
-Lay the street map of a place you know over a place you don't, at the same scale.
+**Where Was I When I Was Here.** Lay the street map of a place you know over a place you don't, at the same scale.
 
-If you grew up somewhere, you carry its distances around with you. mapz draws that place, called Home, as red line-work on top of another place, called Away. Palo Alto to downtown San Jose is 16.7 miles. Put San Jose on central London and Palo Alto lands a few miles short of Watford.
+If you grew up somewhere, you carry its distances around with you. wwiwiwh draws that place, called Home, as red line-work on top of another place, called Away. Palo Alto to downtown San Jose is 16.7 miles. Put San Jose on central London and Palo Alto lands a few miles short of Watford.
 
 ![San Jose's streets in red over London in blue](assets/screenshot.jpg)
 
@@ -66,7 +66,7 @@ The browser tests answer tile and search requests from local fixtures, so they r
 
 ## How the scale matching works
 
-Both maps are Web Mercator, which stretches the ground by 1 / cos(latitude). London at 51.5° north is drawn about 28% larger than San Jose at 37.3° for the same zoom level. mapz cancels that by running Home at a different zoom, offset by log2 of the ratio of the two cosines at the pin.
+Both maps are Web Mercator, which stretches the ground by 1 / cos(latitude). London at 51.5° north is drawn about 28% larger than San Jose at 37.3° for the same zoom level. wwiwiwh cancels that by running Home at a different zoom, offset by log2 of the ratio of the two cosines at the pin.
 
 The two maps are tied by one similarity transform in Mercator space. `src/geo/registration.ts` holds it. Because it is a single rigid transform, the maps cannot drift against each other while you pan. The match is tightest at the pin and stays within about 1% across a metro-sized view. Far from the pin, or zoomed out to a whole country, the two projections stretch differently and the caption says so.
 
@@ -96,7 +96,7 @@ Place names are DOM elements on one layer above both maps, not MapLibre labels. 
 - Maps drawn with [MapLibre GL JS](https://maplibre.org).
 - Typefaces Barlow and Barlow Semi Condensed, under the SIL Open Font License.
 
-OpenFreeMap and Photon are free public services with no uptime promise and a fair-use expectation. If tiles fail to load, mapz says so and retries on its own.
+OpenFreeMap and Photon are free public services with no uptime promise and a fair-use expectation. If tiles fail to load, wwiwiwh says so and retries on its own.
 
 Addresses you search for are sent to Photon to be looked up. A link you copy carries the pin's position and any names you gave its spots, so a link made with your home address pinned contains that address.
 

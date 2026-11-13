@@ -36,10 +36,10 @@ interface RingPlan {
  */
 export function createRings({ ink, layer, sizes }: InstrumentContext): Part {
   // Each ring is drawn twice: a pale casing that knocks it out of the roads it crosses, then the dots.
-  const casings = Array.from({ length: RING_COUNT }, () => svg('circle', { class: 'mapz-ring__casing' }));
-  const circles = Array.from({ length: RING_COUNT }, () => svg('circle', { class: 'mapz-ring' }));
-  const group = svg('g', { class: 'mapz-rings' }, [...casings, ...circles]);
-  const labels = Array.from({ length: RING_COUNT }, () => html('div', 'mapz-ring-label', { 'aria-hidden': 'true' }));
+  const casings = Array.from({ length: RING_COUNT }, () => svg('circle', { class: 'wwiwiwh-ring__casing' }));
+  const circles = Array.from({ length: RING_COUNT }, () => svg('circle', { class: 'wwiwiwh-ring' }));
+  const group = svg('g', { class: 'wwiwiwh-rings' }, [...casings, ...circles]);
+  const labels = Array.from({ length: RING_COUNT }, () => html('div', 'wwiwiwh-ring-label', { 'aria-hidden': 'true' }));
   ink.append(group);
   layer.append(...labels);
   for (const label of labels) sizes.watch(label);

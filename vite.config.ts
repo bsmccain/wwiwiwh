@@ -10,7 +10,7 @@ import { defineConfig } from 'vitest/config';
  */
 function mapWorkerAsset(): Plugin {
   return {
-    name: 'mapz:map-worker-asset',
+    name: 'wwiwiwh:map-worker-asset',
     generateBundle(_options, bundle) {
       for (const file of Object.values(bundle)) {
         if (file.type !== 'asset' || !/maplibre-gl-worker.*\.js$/.test(file.fileName)) continue;

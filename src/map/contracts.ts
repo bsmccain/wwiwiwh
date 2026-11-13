@@ -177,7 +177,7 @@ export interface DualMap {
   setSlideMode(on: boolean): void;
   /**
    * Measuring: taps place trip ends, so double-click / double-tap zoom is off and the stage shows a
-   * crosshair cursor (class `mapz-stage--measure`).
+   * crosshair cursor (class `wwiwiwh-stage--measure`).
    */
   setMeasureMode(on: boolean): void;
   setHomeHidden(hidden: boolean): void;

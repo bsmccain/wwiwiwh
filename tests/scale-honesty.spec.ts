@@ -42,7 +42,7 @@ test.describe('where the two maps stop matching', () => {
 
   test('with the pin off the stage a chip points to it, and brings it back', async ({ app, page }) => {
     await app.open(FAR_FROM_THE_PIN);
-    const chip = page.locator('.mapz-pin-chip');
+    const chip = page.locator('.wwiwiwh-pin-chip');
     await expect(chip).toBeVisible();
     await expect(chip).toHaveAccessibleName(/^Pin \d+ mi away\. Bring it into view\.$/);
     await expect(app.pinHandle).not.toBeInViewport();

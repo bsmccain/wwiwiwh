@@ -12,7 +12,7 @@ test.describe('Hide Home', () => {
 
   test('a quick press latches Home hidden until the next press', async ({ app, page }) => {
     const hide = app.tool('Hide Home');
-    const homeSheet = page.locator('.mapz-sheet--home');
+    const homeSheet = page.locator('.wwiwiwh-sheet--home');
     await expect(homeSheet).toHaveCSS('opacity', '1');
 
     await app.press(hide);
@@ -63,7 +63,7 @@ test.describe('Hide Home', () => {
   test('the H key hides Home for as long as it is down', { tag: '@desktop' }, async ({ app, page }) => {
     await page.keyboard.down('h');
     expect((await app.state()).homeHidden).toBe(true);
-    await expect(page.locator('.mapz-sheet--home')).toHaveCSS('opacity', '0');
+    await expect(page.locator('.wwiwiwh-sheet--home')).toHaveCSS('opacity', '0');
 
     await page.keyboard.up('h');
     expect((await app.state()).homeHidden).toBe(false);
@@ -87,7 +87,7 @@ test.describe('Rings', () => {
 
   test('the Rings tool takes the distance rings away and brings them back', async ({ app, page }) => {
     const rings = app.tool('Rings');
-    const drawn = page.locator('.mapz-rings');
+    const drawn = page.locator('.wwiwiwh-rings');
     await expect(rings).toHaveAttribute('aria-pressed', 'true');
     await expect(drawn).toBeVisible();
 
@@ -175,10 +175,10 @@ test.describe('appearance', () => {
     expect((await app.state()).theme).toBe('dark');
     await app.drawn();
     const styleNames = await page.evaluate(() => {
-      const { dual } = window.__mapzWatch.app();
+      const { dual } = window.__wwiwiwhWatch.app();
       return [dual.base.getStyle().name, dual.overlay.getStyle().name];
     });
-    expect(styleNames).toEqual(['mapz away, dark', 'mapz home, dark']);
+    expect(styleNames).toEqual(['wwiwiwh away, dark', 'wwiwiwh home, dark']);
   });
 
   test('the choice of theme is kept across a reload', async ({ app, page }) => {

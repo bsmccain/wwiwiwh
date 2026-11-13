@@ -111,7 +111,7 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     `Off, a letter or digit pressed on its own does nothing. ${KEYS_THAT_STAY}`,
   );
   const shortcuts = button('menu__item', {}, [el('span', 'menu__item-word', {}, ['Keyboard shortcuts'])]);
-  const about = button('menu__item', {}, [el('span', 'menu__item-word', {}, ['About mapz'])]);
+  const about = button('menu__item', {}, [el('span', 'menu__item-word', {}, ['About wwiwiwh'])]);
 
   const drawChoices = (): void => {
     const state = store.get();

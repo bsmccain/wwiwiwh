@@ -19,11 +19,11 @@ const FOCUS_REACH_PX = 4;
  */
 export function createEdgeChip({ dual, layer, sizes }: InstrumentContext, takeFocus: () => void): Part {
   const arrow = svg('path', { d: 'M0 5.5V-5.5M-4 -1.5L0 -5.5L4 -1.5' });
-  const word = html('span', 'mapz-pin-chip__word');
+  const word = html('span', 'wwiwiwh-pin-chip__word');
   word.textContent = 'Pin';
-  const figure = html('span', 'mapz-pin-chip__figure');
-  const chip = html('button', 'mapz-pin-chip', { type: 'button', hidden: '' });
-  chip.append(drawing('mapz-pin-chip__arrow', { viewBox: '-8 -8 16 16', width: 16, height: 16 }, [arrow]), word, figure);
+  const figure = html('span', 'wwiwiwh-pin-chip__figure');
+  const chip = html('button', 'wwiwiwh-pin-chip', { type: 'button', hidden: '' });
+  chip.append(drawing('wwiwiwh-pin-chip__arrow', { viewBox: '-8 -8 16 16', width: 16, height: 16 }, [arrow]), word, figure);
   layer.append(chip);
   sizes.watch(chip);
 

@@ -11,7 +11,7 @@ export interface Prefs {
   readonly shortcutsOn: boolean;
 }
 
-const KEY = 'mapz:prefs:v1';
+const KEY = 'wwiwiwh:prefs:v1';
 
 function storage(): Storage | null {
   try {

@@ -24,8 +24,8 @@ describe('prefs', () => {
   });
 
   it('ignores corrupt or hostile stored values', () => {
-    expect(loadPrefs('en-US', fakeStorage({ 'mapz:prefs:v1': '{not json' })).units).toBe('mi');
-    const odd = fakeStorage({ 'mapz:prefs:v1': JSON.stringify({ units: 'furlongs', themeChoice: 7, slideHintDone: 'yes' }) });
+    expect(loadPrefs('en-US', fakeStorage({ 'wwiwiwh:prefs:v1': '{not json' })).units).toBe('mi');
+    const odd = fakeStorage({ 'wwiwiwh:prefs:v1': JSON.stringify({ units: 'furlongs', themeChoice: 7, slideHintDone: 'yes' }) });
     expect(loadPrefs('de-DE', odd)).toEqual({ units: 'km', themeChoice: 'auto', slideHintDone: false, shortcutsOn: true });
   });
 

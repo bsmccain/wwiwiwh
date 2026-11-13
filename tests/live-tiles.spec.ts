@@ -9,7 +9,7 @@ function coloursDrawn(page: Page, sheet: 'base' | 'overlay'): Promise<number> {
   return page.evaluate(
     (which) =>
       new Promise<number>((resolve) => {
-        const map = window.__mapzWatch.app().dual[which];
+        const map = window.__wwiwiwhWatch.app().dual[which];
         map.once('render', () => {
           const gl = map.getCanvas().getContext('webgl2');
           if (!gl) return resolve(0);
@@ -33,7 +33,7 @@ function coloursDrawn(page: Page, sheet: 'base' | 'overlay'): Promise<number> {
 }
 
 test.describe('with the public tile service', { tag: ['@live', '@desktop'] }, () => {
-  test.skip(!process.env.MAPZ_LIVE, 'Loads real tiles from the public service. Run it with: npm run test:e2e:live');
+  test.skip(!process.env.WWIWIWH_LIVE, 'Loads real tiles from the public service. Run it with: npm run test:e2e:live');
 
   test('both sheets are drawn and place names appear on them', async ({ app, mapService, page }) => {
     await mapService.stepAside();
@@ -43,7 +43,7 @@ test.describe('with the public tile service', { tag: ['@live', '@desktop'] }, ()
     expect(await coloursDrawn(page, 'base')).toBeGreaterThan(4);
     expect(await coloursDrawn(page, 'overlay')).toBeGreaterThan(2);
 
-    const names = page.locator('.mapz-name--on');
+    const names = page.locator('.wwiwiwh-name--on');
     await expect(names.first()).toBeVisible();
     expect(await names.count()).toBeGreaterThan(5);
     // With names to go by, the trip is described on Away too.
