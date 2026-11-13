@@ -8,6 +8,7 @@ import { createStore, type Store } from './app/store';
 import { INKS, resolveTheme } from './app/theme';
 import type { AppState, Theme } from './app/types';
 import { decodeLink } from './app/url';
+import { DRAG_END_EVENT, DRAG_START_EVENT } from './instruments/drag';
 import { createInstruments, type Instruments } from './instruments/instruments';
 import { createTypePlate, type TypePlate } from './labels/type-plate';
 import { ZOOM_RANGE, type DualMap } from './map/contracts';
@@ -251,8 +252,10 @@ function start(root: HTMLElement): void {
     announcer.hold('gesture', draggingHome);
   });
   // A trip end being dragged is no gesture of the map pair, but it rewords the trip all the same.
-  stage.instruments.addEventListener('pointerdown', () => announcer.hold('handle', true), true);
-  for (const type of ['pointerup', 'pointercancel'] as const) window.addEventListener(type, () => announcer.hold('handle', false), true);
+  // Held for as long as the drag itself, which can end without a release reaching the page (the
+  // window loses focus, or the release goes missing).
+  stage.instruments.addEventListener(DRAG_START_EVENT, () => announcer.hold('handle', true));
+  stage.instruments.addEventListener(DRAG_END_EVENT, () => announcer.hold('handle', false));
   announcer.say('rings', first.rings ? 'Rings on.' : 'Rings off.');
   store.select(
     (state) => state.rings,

@@ -53,3 +53,23 @@ test.describe('what a screen reader is told', { tag: '@desktop' }, () => {
       .toEqual(['Central Tokyo sits on central London. Yokohama to Tokyo is 17.6 mi (28.3 km) in a straight line.']);
   });
 });
+
+test.describe('after a drag that the page never saw released', { tag: '@desktop' }, () => {
+  test('readouts are spoken again once the window has lost focus mid-drag', async ({ app, page }) => {
+    await app.open();
+    const end = page.getByRole('button', { name: 'Trip end' });
+    const box = await end.boundingBox();
+    if (!box) throw new Error('The trip end is not on the stage.');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + 20, { steps: 3 });
+    // Another window is switched to and the button is let go there: the page hears the blur only.
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+    await expect(page.locator('.wwiwiwh-handle.is-held')).toHaveCount(0);
+
+    const said = await listenToLiveRegion(page);
+    await page.keyboard.press(']');
+
+    await expect.poll(() => said.jsonValue()).toEqual(['Home is turned 5 degrees clockwise.']);
+  });
+});

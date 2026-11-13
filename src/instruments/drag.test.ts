@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ScreenPoint } from '../map/contracts';
-import { bindDrag, type DragEnd } from './drag';
+import { bindDrag, DRAG_END_EVENT, DRAG_START_EVENT, type DragEnd } from './drag';
 
 type Listener = (event: FakeEvent) => void;
 
@@ -21,6 +21,13 @@ class FakeTarget {
   send(event: FakeEvent): FakeEvent {
     for (const listener of [...(this.listeners.get(event.type) ?? [])]) listener(event);
     return event;
+  }
+
+  /** Real events sent by the code under test, kept by type. */
+  readonly dispatched: string[] = [];
+  dispatchEvent(event: Event): boolean {
+    this.dispatched.push(event.type);
+    return true;
   }
 }
 
@@ -328,6 +335,37 @@ describe('a drag whose release goes missing', () => {
     press({ x: 300, y: 250 }, { button: 2, buttons: 2 });
     expect(log).toEqual(['start 1 at 200,200', 'end 1']);
     expect(held()).toBe(false);
+  });
+});
+
+describe('the news of a drag', () => {
+  const lifecycle = (handle: FakeHandle) => handle.dispatched.filter((type) => type === DRAG_START_EVENT || type === DRAG_END_EVENT);
+
+  it('is sent from the handle when a drag starts and again when it ends', () => {
+    const { handle, press, onWindow } = setUp();
+    press({ x: 300, y: 250 });
+    expect(lifecycle(handle)).toEqual([DRAG_START_EVENT]);
+    onWindow('pointerup', { x: 300, y: 250 });
+    expect(lifecycle(handle)).toEqual([DRAG_START_EVENT, DRAG_END_EVENT]);
+  });
+
+  it('reports the end of a drag abandoned by the window losing focus, or by a release that went missing', () => {
+    const blurred = setUp();
+    blurred.press({ x: 300, y: 250 });
+    blurred.win.send(event('blur'));
+    expect(lifecycle(blurred.handle)).toEqual([DRAG_START_EVENT, DRAG_END_EVENT]);
+
+    const missed = setUp();
+    missed.press({ x: 300, y: 250 });
+    missed.onWindow('pointermove', { x: 320, y: 260 }, { buttons: 0 });
+    expect(lifecycle(missed.handle)).toEqual([DRAG_START_EVENT, DRAG_END_EVENT]);
+  });
+
+  it('reports the end even when the end handler throws', () => {
+    const { handle, press, onWindow } = setUp({ failOnEnd: true });
+    press({ x: 300, y: 250 });
+    expect(() => onWindow('pointerup', { x: 300, y: 250 })).toThrow('listener');
+    expect(lifecycle(handle)).toEqual([DRAG_START_EVENT, DRAG_END_EVENT]);
   });
 });
 
