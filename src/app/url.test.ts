@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_MERCATOR_LAT } from '../geo/mercator';
 import { baseToOverlay, overlayToBase } from '../geo/registration';
 import { centeredRegistration, defaultLinkState, NO_SPOTS, presetPlace } from './defaults';
 import type { LinkState, Place } from './types';
@@ -42,6 +43,30 @@ describe('link encoding', () => {
     const decoded = decodeLink(`#${hash}`);
     expect(decoded.incomplete).toBe(false);
     expect(decoded.state).toEqual(state);
+  });
+
+  it('round-trips a pin, view and trip in the far north and south, up to the edge of the map', () => {
+    for (const lat of [85.02, -85.02, MAX_MERCATOR_LAT, -MAX_MERCATOR_LAT]) {
+      const state: LinkState = {
+        ...defaultLinkState(),
+        reg: { overlayAnchor: { lat: 37.4419, lng: -122.143 }, baseAnchor: { lat, lng: 20.5 }, rotation: 0 },
+        view: { center: { lat, lng: 20.5 }, zoom: 16 },
+        trip: { from: { lat, lng: -122.143 }, to: { lat: 37.3322, lng: -121.8896 } },
+      };
+      const decoded = decodeLink(`#${encodeLink(state)}`);
+      expect(decoded.incomplete).toBe(false);
+      for (const at of [decoded.state.reg.baseAnchor, decoded.state.view?.center, decoded.state.trip?.from]) {
+        expect(Math.abs((at?.lat ?? 0) - lat)).toBeLessThan(1e-5);
+        expect(Math.abs(at?.lat ?? 0)).toBeLessThanOrEqual(MAX_MERCATOR_LAT);
+      }
+    }
+  });
+
+  it('still refuses a latitude beyond the edge of the map', () => {
+    const { state, incomplete } = decodeLink('#home=san-jose&away=london&pin=37.4419,-122.143~85.06,20.5&view=-85.1,20.5,16');
+    expect(incomplete).toBe(true);
+    expect(state.reg).toEqual(defaultLinkState().reg);
+    expect(state.view).toBeNull();
   });
 
   it('pins centre on centre when the link has no pin', () => {
