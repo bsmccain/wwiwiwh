@@ -99,17 +99,10 @@ export function createLegend(deps: {
   swap.disabled = deps.disabled;
   swap.addEventListener('click', () => actions.swap());
 
-  const drawGround = (ground: Role): void => {
-    element.classList.toggle('legend--ground-home', ground === 'home');
-    element.classList.toggle('legend--ground-away', ground === 'away');
-  };
-
   store.subscribe((state, previous) => {
     if (state.home !== previous.home || state.away !== previous.away) draw();
-    if (state.ground !== previous.ground) drawGround(state.ground);
   });
   draw();
-  drawGround(store.get().ground);
 
   return { element, togglePicker };
 }

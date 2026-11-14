@@ -173,6 +173,16 @@ describe('the ground', () => {
     expect(createStyles('light').ground).toBe('away');
     expect(createStyles('light', 'home').ground).toBe('home');
   });
+
+  it('never tints built-up land from tiles that carry only scattered plots of it', () => {
+    const builtUp = (offset: number) => layer(createStyles('light', 'home').overlay(offset), 'built-up');
+    // Home above Away: its tiles turn patchy at its own zoom 14, before Away gets to 14.
+    expect(builtUp(1.2).maxzoom).toBe(14);
+    expect(paintExpression(builtUp(1.2), 'fill-layer-opacity').slice(-4)).toEqual([13, 1, 14, 0]);
+    // Home below Away: the tint bows out with Away's, at Away zoom 14.
+    expect(builtUp(-1.2).maxzoom).toBe(12.8);
+    expect(layer(createStyles('light').base, 'built-up').maxzoom).toBe(14);
+  });
 });
 
 describe.each(AWAY_LINE_STYLES)('$label', ({ style }) => {

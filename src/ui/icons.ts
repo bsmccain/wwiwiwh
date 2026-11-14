@@ -67,7 +67,7 @@ export function icon(name: IconName, className = ''): SVGSVGElement {
 /**
  * The legend's ink swatches: a piece of each map as it is printed. Home is heavy warm line-work;
  * Away is light cool line-work. The flat tints of land and water are on whichever place has the
- * ground (collar.css shows them by the legend's `legend--ground-*` class).
+ * ground (collar.css hides the other place's by the root's `data-ground`).
  */
 const groundTints = (): Shape[] => [
   ['rect', { class: 'swatch__land', width: '44', height: '22' }],

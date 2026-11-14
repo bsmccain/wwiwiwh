@@ -75,6 +75,12 @@ function start(root: HTMLElement): void {
     slideHintDone: prefs.slideHintDone,
   });
   const first = store.get();
+  // Wherever a swatch of a map's ink is drawn, the tints of land and water go with the place that has the ground.
+  const markGround = (ground: AppState['ground']): void => {
+    document.documentElement.dataset.ground = ground;
+  };
+  store.select((s) => s.ground, markGround);
+  markGround(first.ground);
 
   // --- the page around the maps: stage, margin, dialogs, More menu ---
 

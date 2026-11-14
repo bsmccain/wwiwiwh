@@ -114,18 +114,23 @@ function waterEdgeLayer(palette: Palette): LineLayerSpecification {
  * The ground of the page: the paper, built-up land, woods and parks, and water, all in flat tints.
  * Exactly one of the two sheets prints it, and that sheet lies underneath. The layers are written in
  * Away zooms; Home shifts them like the rest of its style.
+ *
+ * `zoomOffset` is how far above Away the printing map runs (Home's offset; 0 for Away). The built-up
+ * tint bows out where the tiles stop carrying it whole, which is a zoom of that map's own tiles: a
+ * map running above Away reaches it that much sooner in Away zooms.
  */
-export function groundLayers(palette: Palette): LayerSpecification[] {
+export function groundLayers(palette: Palette, zoomOffset = 0): LayerSpecification[] {
   const { away } = palette;
+  const builtUpUntil = BUILT_UP_UNTIL - Math.max(0, zoomOffset);
   return [
     { id: 'sheet', type: 'background', paint: { 'background-color': palette.sheet } },
     {
       ...tint('built-up', 'landuse', classIs(...BUILT_UP), away.builtUp),
-      maxzoom: BUILT_UP_UNTIL,
+      maxzoom: builtUpUntil,
       paint: {
         'fill-color': away.builtUp,
         // Whole-layer opacity: the plots overlap, and per-feature opacity would print the overlaps twice.
-        'fill-layer-opacity': linearByZoom([[BUILT_UP_UNTIL - 1, 1], [BUILT_UP_UNTIL, 0]]),
+        'fill-layer-opacity': linearByZoom([[builtUpUntil - 1, 1], [builtUpUntil, 0]]),
       },
     },
     tint('woods', 'landcover', classIs('wood'), away.green),

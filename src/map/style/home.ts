@@ -98,7 +98,7 @@ function waitForData(weights: RoadWeights, zoomOffset: number): RoadWeights {
 export function homeLayers(palette: Palette, theme: Theme, zoomOffset: number, withGround = false): LayerSpecification[] {
   const { ink } = palette.home;
   const layers: LayerSpecification[] = [
-    ...(withGround ? groundLayers(palette) : []),
+    ...(withGround ? groundLayers(palette, zoomOffset) : []),
     ...seaLayers(ink, withGround),
     freshWaterLayer(ink),
     // Every road at full strength, tunnels included: to a native the freeway is one line whether or not it dives.

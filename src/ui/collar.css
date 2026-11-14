@@ -154,9 +154,9 @@
   fill: color-mix(in srgb, var(--away) 26%, var(--sheet));
 }
 
-/* The tints of land and water belong to the place that has the ground. */
-.legend--ground-away .swatch--home :is(.swatch__land, .swatch__water),
-.legend--ground-home .swatch--away :is(.swatch__land, .swatch__water) {
+/* The tints of land and water belong to the place that has the ground (main.ts keeps `data-ground` on the root). */
+:root:not([data-ground='home']) .swatch--home :is(.swatch__land, .swatch__water),
+:root[data-ground='home'] .swatch--away :is(.swatch__land, .swatch__water) {
   display: none;
 }
 
