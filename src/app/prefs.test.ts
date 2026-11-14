@@ -16,6 +16,7 @@ describe('prefs', () => {
       units: 'mi',
       themeChoice: 'auto',
       ground: 'away',
+      inkSet: 'classic',
       slideHintDone: false,
       shortcutsOn: true,
     });
@@ -25,15 +26,24 @@ describe('prefs', () => {
 
   it('round-trips saved settings', () => {
     const store = fakeStorage();
-    const prefs = { units: 'km', themeChoice: 'dark', ground: 'home', slideHintDone: true, shortcutsOn: false } as const;
+    const prefs = { units: 'km', themeChoice: 'dark', ground: 'home', inkSet: 'thistle', slideHintDone: true, shortcutsOn: false } as const;
     savePrefs(prefs, store);
     expect(loadPrefs('en-US', store)).toEqual(prefs);
   });
 
   it('ignores corrupt or hostile stored values', () => {
     expect(loadPrefs('en-US', fakeStorage({ 'wwiwiwh:prefs:v1': '{not json' })).units).toBe('mi');
-    const odd = fakeStorage({ 'wwiwiwh:prefs:v1': JSON.stringify({ units: 'furlongs', themeChoice: 7, ground: 'mars', slideHintDone: 'yes' }) });
-    expect(loadPrefs('de-DE', odd)).toEqual({ units: 'km', themeChoice: 'auto', ground: 'away', slideHintDone: false, shortcutsOn: true });
+    const odd = fakeStorage({
+      'wwiwiwh:prefs:v1': JSON.stringify({ units: 'furlongs', themeChoice: 7, ground: 'mars', inkSet: 'sepia', slideHintDone: 'yes' }),
+    });
+    expect(loadPrefs('de-DE', odd)).toEqual({
+      units: 'km',
+      themeChoice: 'auto',
+      ground: 'away',
+      inkSet: 'classic',
+      slideHintDone: false,
+      shortcutsOn: true,
+    });
   });
 
   it('never throws when storage refuses', () => {
@@ -47,7 +57,7 @@ describe('prefs', () => {
     };
     expect(() => loadPrefs('en-US', broken)).not.toThrow();
     expect(() =>
-      savePrefs({ units: 'mi', themeChoice: 'auto', ground: 'away', slideHintDone: false, shortcutsOn: true }, broken),
+      savePrefs({ units: 'mi', themeChoice: 'auto', ground: 'away', inkSet: 'classic', slideHintDone: false, shortcutsOn: true }, broken),
     ).not.toThrow();
   });
 });

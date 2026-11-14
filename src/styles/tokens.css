@@ -1,7 +1,10 @@
 /*
  * Design tokens: one printed sheet.
  * Away is the sheet itself (cool ink, flat tints). Home is overprinted on it in one warm ink.
- * Everything that is neither map is drawn in the key ink. Keep in step with src/app/theme.ts.
+ * Everything that is neither map is drawn in the key ink.
+ *
+ * The colours here are the Classic ink set, the one in use until another is chosen. Keep them in step
+ * with src/app/theme.ts (a test checks). The other sets replace them from the generated ink-sets.css.
  */
 :root {
   color-scheme: light;

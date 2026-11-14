@@ -71,6 +71,7 @@ function setup(withDrive: Drive | null = null) {
     themeChoice: 'auto',
     theme: 'light',
     ground: 'away',
+    inkSet: 'classic',
     shortcutsOn: true,
     slideHintDone: false,
   });

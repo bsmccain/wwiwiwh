@@ -291,6 +291,74 @@
   outline-offset: 2px;
 }
 
+/*
+ * The ink sets: radio buttons again, each a swatch of the sheet in that set with its name under it.
+ * The chosen one is framed in key ink and its name reversed; its swatch keeps its own colours.
+ */
+.inks {
+  clear: both;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.inks__option {
+  position: relative;
+  display: grid;
+  cursor: pointer;
+}
+
+.inks__tile {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--rule-control);
+  border-radius: var(--radius-control);
+}
+
+.inks__swatch {
+  display: grid;
+}
+
+.ink-swatch {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  fill: none;
+  stroke-linecap: round;
+  /* A swatch is a picture of colours: a contrast theme leaves it alone, as it does the maps. */
+  forced-color-adjust: none;
+}
+
+.inks__name {
+  padding: 3px 2px 4px;
+  border-block-start: 1px solid var(--rule-control);
+  overflow: hidden;
+  font: var(--text-tool);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inks__option:hover .inks__name {
+  background: var(--wash);
+}
+
+.choice__input:checked + .inks__tile {
+  border-color: var(--key);
+  box-shadow: 0 0 0 1px var(--key);
+}
+
+.choice__input:checked + .inks__tile .inks__name {
+  border-color: var(--key);
+  background: var(--key);
+  color: var(--sheet);
+}
+
+.choice__input:focus-visible + .inks__tile {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
 @keyframes menu-rise {
   from {
     opacity: 0;
@@ -314,10 +382,16 @@
 /* A contrast theme drops the fill that marks the chosen option; the system's selection colours stand in. */
 @media (forced-colors: active) {
   .choice__input:checked + .choice__word,
+  .choice__input:checked + .inks__tile .inks__name,
   .menu__item:active:not(:disabled) {
     forced-color-adjust: none;
     background: Highlight;
     color: HighlightText;
+  }
+
+  /* A box-shadow is dropped here, so the frame of the chosen swatch is an outline. */
+  .choice__input:checked + .inks__tile {
+    outline: 2px solid Highlight;
   }
 
   .menu__item:active:not(:disabled) :is(.ink--home, .ink--away) {

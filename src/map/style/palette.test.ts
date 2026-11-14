@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { INKS } from '../../app/theme';
+import { ALL_INKS } from '../../app/theme';
 import { mix, paletteFor } from './palette';
 import { ROAD_CLASSES } from './roads';
 
@@ -33,16 +33,16 @@ describe('mix', () => {
   });
 });
 
-describe.each(['light', 'dark'] as const)('%s palette', (theme) => {
-  const palette = paletteFor(theme);
-  const inks = INKS[theme];
+describe.each(ALL_INKS)('$id palette', (inks) => {
+  const palette = paletteFor(inks);
 
-  it('takes its inks from the theme', () => {
+  it('takes its inks and its flat tints from the printing', () => {
     expect(palette.sheet).toBe(inks.sheet);
     expect(palette.home.ink).toBe(inks.home);
     expect(palette.away.lettering).toBe(inks.awayDeep);
     expect(palette.away.road.motorway).toBe(inks.away.toLowerCase());
     expect(palette.away.road.trunk).toBe(inks.away.toLowerCase());
+    expect(palette.away).toMatchObject({ builtUp: inks.builtUp, green: inks.green, water: inks.water, waterEdge: inks.waterEdge });
   });
 
   it('weakens Away roads class by class toward the sheet', () => {
@@ -69,7 +69,7 @@ describe.each(['light', 'dark'] as const)('%s palette', (theme) => {
 
   it('sets Home apart from the bulk of Away in lightness as well as hue', () => {
     const home = luminance(inks.home);
-    if (theme === 'dark') {
+    if (inks.theme === 'dark') {
       for (const cls of ROAD_CLASSES) expect(home, cls).toBeGreaterThan(luminance(palette.away.road[cls]));
       return;
     }

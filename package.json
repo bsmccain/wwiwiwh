@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:live": "WWIWIWH_LIVE=1 playwright test --grep @live",
+    "inks": "vitest run src/styles/ink-sets.test.ts -u",
     "shot": "node scripts/screenshot.mjs"
   },
   "dependencies": {

@@ -1,10 +1,11 @@
 import type { Controller } from '../app/controller';
 import type { Store } from '../app/store';
-import type { AppState, ThemeChoice } from '../app/types';
+import { INK_SETS, inkSet } from '../app/theme';
+import type { AppState, InkSetId, Theme, ThemeChoice } from '../app/types';
 import type { Units } from '../geo/units';
 import type { Sheet } from '../map/contracts';
-import { button, el, uniqueId } from './dom';
-import { icon, type IconName } from './icons';
+import { button, el, setText, uniqueId } from './dom';
+import { icon, inkSetSwatch, type IconName } from './icons';
 import { openMenuPanel } from './menu-panel';
 import { KEYS_THAT_STAY } from './shortcuts';
 
@@ -16,7 +17,7 @@ export interface MoreMenuOptions {
   /** The More button. Focus returns to it when the menu closes. */
   anchor: HTMLElement;
   store: Store<AppState>;
-  actions: Pick<Controller, 'lineUpAgain' | 'setUnits' | 'setThemeChoice' | 'setGround' | 'setShortcutsOn'>;
+  actions: Pick<Controller, 'lineUpAgain' | 'setUnits' | 'setThemeChoice' | 'setInkSet' | 'setGround' | 'setShortcutsOn'>;
   /** False where the maps could not start: there is nothing to line up and no pin to set. */
   mapReady: boolean;
   /** False on devices with no keyboard to speak of. */
@@ -97,6 +98,41 @@ function choiceGroup<V extends string>(
 }
 
 /**
+ * The ink sets as a grid of radio buttons, each a swatch of the sheet in that set with its name under
+ * it. The swatches are in the theme in effect, and the line below says what the chosen set is for.
+ */
+function inkGroup(onChoose: (set: InkSetId) => void): { readonly element: HTMLElement; draw(chosen: InkSetId, theme: Theme): void } {
+  const name = uniqueId('inks');
+  const note = el('p', 'menu__note', { id: uniqueId('inks-note') });
+  const options = INK_SETS.map((set) => {
+    // The chosen radio is the one a screen reader lands on, so the note is its description.
+    const input = el('input', 'choice__input', { type: 'radio', name, value: set.id, 'aria-describedby': note.id });
+    input.addEventListener('change', () => {
+      if (input.checked) onChoose(set.id);
+    });
+    const swatch = el('span', 'inks__swatch');
+    const element = el('label', 'inks__option', {}, [input, el('span', 'inks__tile', {}, [swatch, el('span', 'inks__name', {}, [set.name])])]);
+    return { set, input, swatch, element };
+  });
+  let drawnIn: Theme | null = null;
+  return {
+    element: el('fieldset', 'menu__group', {}, [
+      el('legend', 'menu__legend', {}, ['Colours']),
+      el('div', 'inks', {}, options.map((option) => option.element)),
+      note,
+    ]),
+    draw(chosen, theme) {
+      for (const { set, input, swatch } of options) {
+        if (theme !== drawnIn) swatch.replaceChildren(inkSetSwatch(set[theme], 'inks__drawing'));
+        input.checked = set.id === chosen;
+      }
+      drawnIn = theme;
+      setText(note, inkSet(chosen).note);
+    },
+  };
+}
+
+/**
  * The More menu: the things that are set once and then left alone, and the long way round to the
  * pin's addresses. A popover rising from the collar on wide screens, a bottom sheet on phones, in
  * step with the place picker.
@@ -115,6 +151,7 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     (value) => actions.setGround(value),
     'Parks, woods, built-up areas and water are shaded for this place. The other is drawn as streets only.',
   );
+  const inks = inkGroup((set) => actions.setInkSet(set));
   const singleKeys = choiceGroup(
     'Single-key shortcuts',
     ON_OFF_CHOICES,
@@ -128,18 +165,13 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     const state = store.get();
     units.select(state.units);
     theme.select(state.themeChoice);
+    inks.draw(state.inkSet, state.theme);
     ground.select(state.ground);
     singleKeys.select(state.shortcutsOn ? 'on' : 'off');
   };
   const unsubscribe = store.subscribe((state, previous) => {
-    if (
-      state.units !== previous.units ||
-      state.themeChoice !== previous.themeChoice ||
-      state.ground !== previous.ground ||
-      state.shortcutsOn !== previous.shortcutsOn
-    ) {
-      drawChoices();
-    }
+    const settings = ['units', 'themeChoice', 'theme', 'inkSet', 'ground', 'shortcutsOn'] as const;
+    if (settings.some((setting) => state[setting] !== previous[setting])) drawChoices();
   });
   drawChoices();
 
@@ -147,7 +179,17 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     title: 'More',
     anchor: options.anchor,
     placement: 'rising',
-    content: [lineUp, pinByAddress, units.element, ground.element, theme.element, options.offerShortcuts && singleKeys.element, options.offerShortcuts && shortcuts, about],
+    content: [
+      lineUp,
+      pinByAddress,
+      units.element,
+      ground.element,
+      theme.element,
+      inks.element,
+      options.offerShortcuts && singleKeys.element,
+      options.offerShortcuts && shortcuts,
+      about,
+    ],
     firstStop: options.mapReady ? lineUp : null,
     byKeyboard: options.byKeyboard,
     onClose() {

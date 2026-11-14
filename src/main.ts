@@ -1,12 +1,13 @@
 import './styles/base.css';
 import './ui/app.css';
+import './styles/ink-sets.css';
 import { createController, FRAMING_ZOOM, NARROW_STAGE_PX, type Controller } from './app/controller';
 import { browserAddressBar, createLinkSync } from './app/link-sync';
 import { loadPrefs } from './app/prefs';
 import { pageTitle } from './app/readout';
 import { createStore, type Store } from './app/store';
-import { INKS, resolveTheme } from './app/theme';
-import type { AppState, Theme } from './app/types';
+import { inksFor, resolveTheme, type Inks } from './app/theme';
+import type { AppState } from './app/types';
 import { decodeLink } from './app/url';
 import { DRAG_END_EVENT, DRAG_START_EVENT } from './instruments/drag';
 import { createInstruments, type Instruments } from './instruments/instruments';
@@ -44,10 +45,12 @@ declare global {
 /** Zoom levels closer to a limit than this count as at it. */
 const ZOOM_LIMIT_SLACK = 0.001;
 
-function applyTheme(theme: Theme): void {
-  document.documentElement.dataset['theme'] = theme;
+function applyInks(inks: Inks): void {
+  const root = document.documentElement;
+  root.dataset['theme'] = inks.theme;
+  root.dataset['inks'] = inks.set;
   // The browser's own chrome continues the sheet, whichever scheme the system is in.
-  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) meta.setAttribute('content', INKS[theme].sheet);
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) meta.setAttribute('content', inks.sheet);
 }
 
 function start(root: HTMLElement): void {
@@ -55,8 +58,9 @@ function start(root: HTMLElement): void {
   const prefs = loadPrefs(navigator.language);
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
   const theme = resolveTheme(prefs.themeChoice, systemDark.matches);
-  // Before anything is drawn, so neither the page nor the maps flash in the other theme.
-  applyTheme(theme);
+  const inks = inksFor(prefs.inkSet, theme);
+  // Before anything is drawn, so neither the page nor the maps flash in other colours.
+  applyInks(inks);
 
   const store = createStore<AppState>({
     ...link.state,
@@ -71,6 +75,7 @@ function start(root: HTMLElement): void {
     themeChoice: prefs.themeChoice,
     theme,
     ground: prefs.ground,
+    inkSet: prefs.inkSet,
     shortcutsOn: prefs.shortcutsOn,
     slideHintDone: prefs.slideHintDone,
   });
@@ -149,7 +154,7 @@ function start(root: HTMLElement): void {
         center: first.reg.baseAnchor,
         zoom: stage.element.clientWidth < NARROW_STAGE_PX ? FRAMING_ZOOM.narrow : FRAMING_ZOOM.wide,
       },
-      styles: createStyles(theme, prefs.ground),
+      styles: createStyles(inks, prefs.ground),
     });
   } catch (error) {
     if (!(error instanceof MapUnavailableError)) throw error;
@@ -159,7 +164,7 @@ function start(root: HTMLElement): void {
       store,
       overlays,
       systemPrefersDark: () => systemDark.matches,
-      applyTheme,
+      applyInks,
       openMenu: toggleMenu,
     });
     collar.element.id = 'collar';
@@ -194,7 +199,7 @@ function start(root: HTMLElement): void {
         return () => systemDark.removeEventListener('change', listener);
       },
     },
-    applyTheme,
+    applyInks,
     pageUrl: () => window.location.href.replace(/#.*$/, ''),
   });
 

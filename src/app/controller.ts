@@ -21,8 +21,8 @@ import { createDriveRunner } from './drive-runner';
 import { savePrefs, type Prefs } from './prefs';
 import type { Store } from './store';
 import { nameAt, sameSpot, tidyName } from './spots';
-import { resolveTheme } from './theme';
-import type { AppState, Drive, DriveEnd, DriveMatch, LinkState, Place, ThemeChoice, Trip } from './types';
+import { inksFor, resolveTheme, type Inks } from './theme';
+import type { AppState, Drive, DriveEnd, DriveMatch, InkSetId, LinkState, Place, ThemeChoice, Trip } from './types';
 import { encodeLink } from './url';
 
 /** Zoom used when a pair is framed automatically. Phones show less ground, so they start further out. */
@@ -49,8 +49,8 @@ export interface ControllerDeps {
   readonly styles: StyleFactory;
   /** Reports the system colour scheme and notifies when it changes. */
   readonly systemTheme: { prefersDark(): boolean; onChange(listener: () => void): () => void };
-  /** Where the theme is applied to the page (sets data-theme on the root element). */
-  readonly applyTheme: (theme: 'light' | 'dark') => void;
+  /** Where the inks in effect are applied to the page (sets data-theme and data-inks on the root element). */
+  readonly applyInks: (inks: Inks) => void;
   /** The address the page is served from, without a hash. */
   readonly pageUrl: () => string;
   /** Where the viewer's preferences are kept. Defaults to this browser's local storage. */
@@ -122,6 +122,7 @@ export interface Controller {
   /** Shade in the land and water of Home or of Away; the other place is drawn as streets only. */
   setGround(ground: Sheet): void;
   toggleGround(): void;
+  setInkSet(set: InkSetId): void;
   /** Turn the single-letter keyboard shortcuts on or off. */
   setShortcutsOn(on: boolean): void;
   /** The one-time hint about sliding Home is no longer needed. */
@@ -177,9 +178,12 @@ export function createController(deps: ControllerDeps): Controller {
     }),
     store.select((s) => s.homeHidden, (hidden) => dual.setHomeHidden(hidden)),
     store.subscribe((state, previous) => {
-      if (state.theme === previous.theme && state.ground === previous.ground) return;
-      if (state.theme !== previous.theme) deps.applyTheme(state.theme);
-      dual.setStyles(deps.styles(state.theme, state.ground));
+      // One object per set and theme, so the page is recoloured when either changes and not otherwise.
+      const inks = inksFor(state.inkSet, state.theme);
+      const recoloured = inks !== inksFor(previous.inkSet, previous.theme);
+      if (!recoloured && state.ground === previous.ground) return;
+      if (recoloured) deps.applyInks(inks);
+      dual.setStyles(deps.styles(inks, state.ground));
     }),
     deps.systemTheme.onChange(() => {
       store.set((s) => ({ theme: resolveTheme(s.themeChoice, deps.systemTheme.prefersDark()) }));
@@ -196,6 +200,7 @@ export function createController(deps: ControllerDeps): Controller {
         s.units === previous.units &&
         s.themeChoice === previous.themeChoice &&
         s.ground === previous.ground &&
+        s.inkSet === previous.inkSet &&
         s.shortcutsOn === previous.shortcutsOn &&
         s.slideHintDone === previous.slideHintDone
       ) {
@@ -205,6 +210,7 @@ export function createController(deps: ControllerDeps): Controller {
         units: s.units,
         themeChoice: s.themeChoice,
         ground: s.ground,
+        inkSet: s.inkSet,
         shortcutsOn: s.shortcutsOn,
         slideHintDone: s.slideHintDone,
       });
@@ -501,6 +507,9 @@ export function createController(deps: ControllerDeps): Controller {
 
     setThemeChoice(choice) {
       store.set({ themeChoice: choice, theme: resolveTheme(choice, deps.systemTheme.prefersDark()) });
+    },
+    setInkSet(set) {
+      store.set({ inkSet: set });
     },
 
     setGround(ground) {

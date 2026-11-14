@@ -126,6 +126,8 @@ export type Mode = 'browse' | 'slide' | 'measure' | 'drive';
 
 export type Theme = 'light' | 'dark';
 export type ThemeChoice = 'auto' | Theme;
+/** A set of inks the sheet can be printed in. Each has a light and a dark printing; see src/app/theme.ts. */
+export type InkSetId = 'classic' | 'kingfisher' | 'thistle' | 'newsprint' | 'parchment' | 'blueprint' | 'stark';
 
 /** Everything a shared link restores. */
 export interface LinkState {
@@ -163,6 +165,8 @@ export interface AppState extends LinkState {
   readonly theme: Theme;
   /** The place whose land and water are shaded in (and which lies underneath); the other is drawn as streets only. */
   readonly ground: Sheet;
+  /** The inks the sheet is printed in, in whichever theme is in effect. */
+  readonly inkSet: InkSetId;
   /** Whether single-letter keyboard shortcuts (S, M, X ...) are listened for. */
   readonly shortcutsOn: boolean;
   /** The one-time hint about sliding Home has been seen or made redundant. */

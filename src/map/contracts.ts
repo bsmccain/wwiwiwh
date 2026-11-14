@@ -1,5 +1,6 @@
 import type { LayerSpecification, Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
-import type { Theme, View } from '../app/types';
+import type { Inks } from '../app/theme';
+import type { View } from '../app/types';
 import type { Registration } from '../geo/registration';
 import type { LngLat, Outline } from '../geo/types';
 
@@ -63,8 +64,8 @@ export interface MapStyles {
   readonly prepare?: (map: MapLibreMap, sheet: Sheet) => void;
 }
 
-/** Builds the two styles for a theme, with the ground on Away unless told otherwise. Implemented in src/map/style. */
-export type StyleFactory = (theme: Theme, ground?: Sheet) => MapStyles;
+/** Builds the two styles in one set of inks, light or dark, with the ground on Away unless told otherwise. Implemented in src/map/style. */
+export type StyleFactory = (inks: Inks, ground?: Sheet) => MapStyles;
 
 export interface DualMapOptions {
   /** Element that will hold both map canvases. The caller positions and sizes it; the pair fills it. */

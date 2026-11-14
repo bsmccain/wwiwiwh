@@ -1,10 +1,9 @@
-import { INKS } from '../../app/theme';
-import type { Theme } from '../../app/types';
+import type { Inks } from '../../app/theme';
 import type { RoadClass } from './roads';
 
 /**
- * Every colour the two map styles print with. The inks come from src/app/theme.ts; the flat tints of
- * the Away sheet are set by hand per theme, and everything else is an ink mixed toward the sheet.
+ * Every colour the two map styles print with. The inks and the flat tints of the Away sheet come from
+ * src/app/theme.ts; everything else is an ink mixed toward the sheet.
  */
 export interface Palette {
   /** The paper. Also what lettering is haloed with and what Home's route numbers are lettered in. */
@@ -39,11 +38,6 @@ const AWAY_RAIL_STRENGTH = 0.5;
 /** How much of its strength an Away line keeps underground. */
 const TUNNEL_STRENGTH = 0.45;
 
-const AWAY_TINTS: Readonly<Record<Theme, Pick<Palette['away'], 'builtUp' | 'green' | 'water' | 'waterEdge'>>> = {
-  light: { builtUp: '#E8ECEF', green: '#DDE8DB', water: '#CFDDEE', waterEdge: '#8FAFD8' },
-  dark: { builtUp: '#15263B', green: '#132C2E', water: '#17365C', waterEdge: '#3F6699' },
-};
-
 function channels(hex: string): [number, number, number] {
   const value = Number.parseInt(hex.slice(1), 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
@@ -65,13 +59,15 @@ function tintEachClass(tint: (share: number) => string, scale = 1): Record<RoadC
   return Object.fromEntries(tints) as Record<RoadClass, string>;
 }
 
-export function paletteFor(theme: Theme): Palette {
-  const inks = INKS[theme];
+export function paletteFor(inks: Inks): Palette {
   const awayTint = (share: number) => mix(inks.away, inks.sheet, share);
   return {
     sheet: inks.sheet,
     away: {
-      ...AWAY_TINTS[theme],
+      builtUp: inks.builtUp,
+      green: inks.green,
+      water: inks.water,
+      waterEdge: inks.waterEdge,
       road: tintEachClass(awayTint),
       roadTunnel: tintEachClass(awayTint, TUNNEL_STRENGTH),
       rail: awayTint(AWAY_RAIL_STRENGTH),

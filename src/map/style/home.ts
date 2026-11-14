@@ -1,5 +1,5 @@
 import type { ExpressionSpecification, LayerSpecification, LineLayerSpecification } from 'maplibre-gl';
-import type { Theme } from '../../app/types';
+import type { Inks } from '../../app/theme';
 import { SOURCE_ID } from '../contracts';
 import { NOT_INTERMITTENT, NOT_TUNNEL, classIs, fadeIn, linearByZoom, widthByZoom } from './expressions';
 import { groundLayers } from './away';
@@ -95,7 +95,7 @@ function waitForData(weights: RoadWeights, zoomOffset: number): RoadWeights {
   return waiting;
 }
 
-export function homeLayers(palette: Palette, theme: Theme, zoomOffset: number, withGround = false): LayerSpecification[] {
+export function homeLayers(palette: Palette, inks: Inks, zoomOffset: number, withGround = false): LayerSpecification[] {
   const { ink } = palette.home;
   const layers: LayerSpecification[] = [
     ...(withGround ? groundLayers(palette, zoomOffset) : []),
@@ -112,7 +112,7 @@ export function homeLayers(palette: Palette, theme: Theme, zoomOffset: number, w
         ['all', classIs('trunk'), ['<=', ['get', 'ref_length'], 4]],
       ],
       from: ROUTE_NUMBERS_FROM,
-      plate: routeImageId('home', theme),
+      plate: routeImageId('home', inks),
       numerals: palette.sheet,
       spacing: 340,
     }),

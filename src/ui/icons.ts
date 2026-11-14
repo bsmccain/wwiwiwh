@@ -4,6 +4,8 @@
  * An icon sits next to a word or inside a named button, so it is hidden from assistive technology.
  */
 
+import type { Inks } from '../app/theme';
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 /** One shape of a drawing: its SVG tag and attributes. */
@@ -84,4 +86,25 @@ const SWATCHES = {
 
 export function inkSwatch(role: 'home' | 'away', className: string): SVGSVGElement {
   return drawing(`swatch swatch--${role} ${className}`, '0 0 44 22', SWATCHES[role]);
+}
+
+/**
+ * A corner of the sheet as one set of inks prints it: the tint of water, Away's thin roads, Home's
+ * heavy line across them, and a ring of key ink. Its colours are written into the drawing, because a swatch
+ * shows inks other than the ones the page is in.
+ */
+export function inkSetSwatch(inks: Inks, className: string): SVGSVGElement {
+  const line = (d: string, stroke: string, width: number, extra: Readonly<Record<string, string>> = {}): Shape => [
+    'path',
+    { d, stroke, 'stroke-width': String(width), ...extra },
+  ];
+  return drawing(`ink-swatch ${className}`, '0 0 48 28', [
+    ['rect', { width: '48', height: '28', fill: inks.sheet }],
+    ['path', { d: 'M0 20c11-6 24 5 48-3v11H0z', fill: inks.water }],
+    line('M15 0l4 28M38 0l-4 28', inks.away, 0.9, { 'stroke-opacity': '0.55' }),
+    line('M0 9c17-3 28 3 48-1', inks.away, 1.8),
+    line('M9 0l12 28', inks.home, 1.1),
+    line('M0 23C17 23 21 9 48 8', inks.home, 3.2),
+    circle(33, 16.5, 3.4, { fill: inks.sheet, stroke: inks.key, 'stroke-width': '1.5' }),
+  ]);
 }
