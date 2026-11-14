@@ -70,6 +70,7 @@ function setup(withDrive: Drive | null = null) {
     units: 'mi',
     themeChoice: 'auto',
     theme: 'light',
+    ground: 'away',
     shortcutsOn: true,
     slideHintDone: false,
   });

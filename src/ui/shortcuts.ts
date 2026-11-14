@@ -57,6 +57,7 @@ export type KeyCommand =
         | 'pinAtCenter'
         | 'openPinMenu'
         | 'toggleUnits'
+        | 'toggleGround'
         | 'copyLink'
         | 'pickHome'
         | 'pickAway'
@@ -93,6 +94,7 @@ const ONCE: Readonly<Record<string, KeyCommand['do']>> = {
   p: 'pinAtCenter',
   a: 'openPinMenu',
   u: 'toggleUnits',
+  t: 'toggleGround',
   c: 'copyLink',
   '1': 'pickHome',
   '2': 'pickAway',
@@ -172,6 +174,7 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
       { keys: [['←'], ['→'], ['↑'], ['↓']], does: 'Move both maps' },
       { keys: [['+'], ['−']], does: 'Zoom in and out' },
       { keys: [['X']], does: 'Swap Home and Away' },
+      { keys: [['T']], does: 'Shade the land and water of Home or of Away' },
       { keys: [['1']], does: 'Choose Home' },
       { keys: [['2']], does: 'Choose Away' },
     ],

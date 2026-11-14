@@ -42,6 +42,7 @@ function setup() {
     units: 'mi',
     themeChoice: 'auto',
     theme: 'light',
+    ground: 'away',
     shortcutsOn: true,
     slideHintDone: false,
   });
@@ -55,7 +56,7 @@ function setup() {
   const controller = createController({
     store,
     dual,
-    styles: () => fakeStyles,
+    styles: (_theme, ground = 'away') => ({ ...fakeStyles, ground }),
     systemTheme: {
       prefersDark: () => prefersDark,
       onChange(listener) {
@@ -164,11 +165,13 @@ describe('controller', () => {
     controller.setShortcutsOn(false);
     controller.finishSlideHint();
     controller.finishSlideHint();
+    controller.toggleGround();
     expect(saved).toEqual([
-      { units: 'km', themeChoice: 'auto', shortcutsOn: true, slideHintDone: false },
-      { units: 'km', themeChoice: 'dark', shortcutsOn: true, slideHintDone: false },
-      { units: 'km', themeChoice: 'dark', shortcutsOn: false, slideHintDone: false },
-      { units: 'km', themeChoice: 'dark', shortcutsOn: false, slideHintDone: true },
+      { units: 'km', themeChoice: 'auto', ground: 'away', shortcutsOn: true, slideHintDone: false },
+      { units: 'km', themeChoice: 'dark', ground: 'away', shortcutsOn: true, slideHintDone: false },
+      { units: 'km', themeChoice: 'dark', ground: 'away', shortcutsOn: false, slideHintDone: false },
+      { units: 'km', themeChoice: 'dark', ground: 'away', shortcutsOn: false, slideHintDone: true },
+      { units: 'km', themeChoice: 'dark', ground: 'home', shortcutsOn: false, slideHintDone: true },
     ]);
   });
 
@@ -461,6 +464,16 @@ describe('controller', () => {
     expect(store.get().theme).toBe('light');
     setSystemDark(false);
     expect(applied).toEqual(['dark', 'light']);
+  });
+
+  it('restyles the maps when the ground changes hands, without touching the page theme', () => {
+    const { store, dual, controller, applied } = setup();
+    controller.toggleGround();
+    expect(store.get().ground).toBe('home');
+    expect(dual.styles?.ground).toBe('home');
+    controller.setGround('away');
+    expect(dual.styles?.ground).toBe('away');
+    expect(applied).toEqual([]);
   });
 
   it('remembers only the views the person chose', () => {

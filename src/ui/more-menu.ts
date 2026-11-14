@@ -2,6 +2,7 @@ import type { Controller } from '../app/controller';
 import type { Store } from '../app/store';
 import type { AppState, ThemeChoice } from '../app/types';
 import type { Units } from '../geo/units';
+import type { Sheet } from '../map/contracts';
 import { button, el, uniqueId } from './dom';
 import { icon, type IconName } from './icons';
 import { openMenuPanel } from './menu-panel';
@@ -15,7 +16,7 @@ export interface MoreMenuOptions {
   /** The More button. Focus returns to it when the menu closes. */
   anchor: HTMLElement;
   store: Store<AppState>;
-  actions: Pick<Controller, 'lineUpAgain' | 'setUnits' | 'setThemeChoice' | 'setShortcutsOn'>;
+  actions: Pick<Controller, 'lineUpAgain' | 'setUnits' | 'setThemeChoice' | 'setGround' | 'setShortcutsOn'>;
   /** False where the maps could not start: there is nothing to line up and no pin to set. */
   mapReady: boolean;
   /** False on devices with no keyboard to speak of. */
@@ -40,6 +41,10 @@ const THEME_CHOICES: readonly { readonly value: ThemeChoice; readonly word: stri
   { value: 'auto', word: 'Match system' },
   { value: 'light', word: 'Light' },
   { value: 'dark', word: 'Dark' },
+];
+const GROUND_CHOICES: readonly { readonly value: Sheet; readonly word: string }[] = [
+  { value: 'away', word: 'Away' },
+  { value: 'home', word: 'Home' },
 ];
 const ON_OFF_CHOICES: readonly { readonly value: OnOff; readonly word: string }[] = [
   { value: 'on', word: 'On' },
@@ -104,6 +109,12 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
   for (const item of [lineUp, pinByAddress]) item.disabled = !options.mapReady;
   const units = choiceGroup('Units', UNIT_CHOICES, (value) => actions.setUnits(value));
   const theme = choiceGroup('Appearance', THEME_CHOICES, (value) => actions.setThemeChoice(value));
+  const ground = choiceGroup(
+    'Land and water from',
+    GROUND_CHOICES,
+    (value) => actions.setGround(value),
+    'Parks, woods, built-up areas and water are shaded for this place. The other is drawn as streets only.',
+  );
   const singleKeys = choiceGroup(
     'Single-key shortcuts',
     ON_OFF_CHOICES,
@@ -117,10 +128,16 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     const state = store.get();
     units.select(state.units);
     theme.select(state.themeChoice);
+    ground.select(state.ground);
     singleKeys.select(state.shortcutsOn ? 'on' : 'off');
   };
   const unsubscribe = store.subscribe((state, previous) => {
-    if (state.units !== previous.units || state.themeChoice !== previous.themeChoice || state.shortcutsOn !== previous.shortcutsOn) {
+    if (
+      state.units !== previous.units ||
+      state.themeChoice !== previous.themeChoice ||
+      state.ground !== previous.ground ||
+      state.shortcutsOn !== previous.shortcutsOn
+    ) {
       drawChoices();
     }
   });
@@ -130,7 +147,7 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     title: 'More',
     anchor: options.anchor,
     placement: 'rising',
-    content: [lineUp, pinByAddress, units.element, theme.element, options.offerShortcuts && singleKeys.element, options.offerShortcuts && shortcuts, about],
+    content: [lineUp, pinByAddress, units.element, ground.element, theme.element, options.offerShortcuts && singleKeys.element, options.offerShortcuts && shortcuts, about],
     firstStop: options.mapReady ? lineUp : null,
     byKeyboard: options.byKeyboard,
     onClose() {

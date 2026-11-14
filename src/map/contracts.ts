@@ -17,7 +17,10 @@ export interface ScreenBox {
   readonly height: number;
 }
 
-/** Which of the two stacked maps: Away is the base sheet, Home is the overlay drawn on top. */
+/**
+ * Which of the two stacked maps. Away is the base map, the one that takes input; Home is the overlay
+ * whose camera follows it. Whichever has the ground (see `MapStyles.ground`) is drawn underneath.
+ */
 export type Sheet = 'home' | 'away';
 
 /** The id of the one vector source both styles use (OpenFreeMap, OpenMapTiles schema). */
@@ -38,6 +41,11 @@ export interface SheetDrawing {
 export const NO_DRAWING: SheetDrawing = { route: null, reach: null };
 
 export interface MapStyles {
+  /**
+   * The sheet that prints the ground (the paper and the tints of land and water) and so lies
+   * underneath. The other sheet is line-work printed over it. Away unless the viewer chose Home.
+   */
+  readonly ground: Sheet;
   /** Style of the Away (base) map. */
   readonly base: StyleSpecification;
   /**
@@ -55,8 +63,8 @@ export interface MapStyles {
   readonly prepare?: (map: MapLibreMap, sheet: Sheet) => void;
 }
 
-/** Builds the two styles for a theme. Implemented in src/map/style. */
-export type StyleFactory = (theme: Theme) => MapStyles;
+/** Builds the two styles for a theme, with the ground on Away unless told otherwise. Implemented in src/map/style. */
+export type StyleFactory = (theme: Theme, ground?: Sheet) => MapStyles;
 
 export interface DualMapOptions {
   /** Element that will hold both map canvases. The caller positions and sizes it; the pair fills it. */

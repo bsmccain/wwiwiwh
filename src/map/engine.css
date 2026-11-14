@@ -1,6 +1,9 @@
 /*
  * The map pair: Away (the base sheet) below, Home (the overprint) above, both filling the stage.
  * Home is composited with plain alpha: it simply draws on top.
+ *
+ * When Home has the ground, the order turns over: Home prints the paper and lies below, and Away's
+ * line-work is drawn over it. Away's canvas keeps taking all input either way; Home never does.
  */
 .wwiwiwh-stage {
   position: relative;
@@ -26,6 +29,10 @@
 .wwiwiwh-stage > .wwiwiwh-sheet--home {
   pointer-events: none;
   transition: opacity var(--dur-fast, 120ms) linear;
+}
+
+.wwiwiwh-stage--home-ground > .wwiwiwh-sheet--away {
+  z-index: 1;
 }
 
 .wwiwiwh-stage--home-hidden > .wwiwiwh-sheet--home {

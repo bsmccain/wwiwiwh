@@ -18,6 +18,7 @@ If you grew up somewhere, you carry its distances around with you. wwiwiwh draws
 - **Set the pin by address.** Click the pin, press `A`, or pick "Set the pin by address" under More. Choose a Home spot and an Away spot by typing an address, a landmark or a neighbourhood. A Home spot is brought under the pin. An Away spot moves the pin there, with its Home spot. Both maps centre on the pin and zoom in to street scale. The two names in the pin sentence are buttons that open the same search, and recent spots are remembered on your device.
 - **Measure.** Click two points to draw a line you know. The line belongs to Home and rides along when you slide or turn it. The caption says how long it is and where it runs on Away. "To an address" draws the line to an address on either place, from the pin or from a start you clicked.
 - **Drive.** Click where a drive starts and where it ends, and it is drawn along the real roads with its distance and an estimated time. A drive is on one place: Home at first, and after that whichever place the last drive was on. Switch with "On Away" before placing the start. The other place then shades how far the same amount of time would get you from the spot the start lands on, or the same distance with "Same distance". Two rings go about the start, on both maps: a dashed one through the end, labelled with the distance between the two as the crow flies, and one of dashes and dots as far out as the drive is long by road. Slide or turn Home and the shading is worked out again from the new spot. "To an address" picks both ends by address, and "By road" on a measured line turns it into a drive between the same two ends.
+- **Land and water.** Parks, woods, built-up areas and water are shaded for one place at a time: Away at first, with Home drawn over it as streets only. Under More, "Land and water from" (or `T`) gives them to Home instead. Home then lies underneath and Away is drawn over it as streets only.
 - **Rings** draw round distances about the pin. **Hide Home** blinks the overlay off while you hold it, or latches on a quick tap. **Swap** exchanges the two places.
 - **Copy link** gives an address that reopens the same view. The address bar updates as you go, so Back returns to the previous pair of places.
 
@@ -42,6 +43,7 @@ Measure gives straight lines. Drive gives distances by road and times for a car 
 | `A` | Set the pin by address |
 | `R` | Line up again |
 | `U` | Miles or kilometres |
+| `T` | Shade the land and water of Home or of Away |
 | `1` `2` | Choose Home, choose Away |
 | `C` | Copy link |
 | `?` | Show the list of keys |

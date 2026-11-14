@@ -70,6 +70,7 @@ function start(root: HTMLElement): void {
     units: prefs.units,
     themeChoice: prefs.themeChoice,
     theme,
+    ground: prefs.ground,
     shortcutsOn: prefs.shortcutsOn,
     slideHintDone: prefs.slideHintDone,
   });
@@ -142,7 +143,7 @@ function start(root: HTMLElement): void {
         center: first.reg.baseAnchor,
         zoom: stage.element.clientWidth < NARROW_STAGE_PX ? FRAMING_ZOOM.narrow : FRAMING_ZOOM.wide,
       },
-      styles: createStyles(theme),
+      styles: createStyles(theme, prefs.ground),
     });
   } catch (error) {
     if (!(error instanceof MapUnavailableError)) throw error;
