@@ -1,6 +1,7 @@
 import { defaultUnits, type Units } from '../geo/units';
 import type { Sheet } from '../map/contracts';
-import type { ThemeChoice } from './types';
+import { DEFAULT_INK_SET, isInkSetId } from './theme';
+import type { InkSetId, ThemeChoice } from './types';
 
 /** The viewer's own settings. They stay on this device and never travel in a shared link. */
 export interface Prefs {
@@ -8,6 +9,7 @@ export interface Prefs {
   readonly themeChoice: ThemeChoice;
   /** The place whose land and water are shaded in. */
   readonly ground: Sheet;
+  readonly inkSet: InkSetId;
   /** The one-time hint about sliding Home has been seen or made redundant. */
   readonly slideHintDone: boolean;
   /** Single-letter keyboard shortcuts are on. People who dictate or use switch access may turn them off. */
@@ -29,6 +31,7 @@ export function loadPrefs(locale: string | undefined, store: Pick<Storage, 'getI
     units: defaultUnits(locale),
     themeChoice: 'auto',
     ground: 'away',
+    inkSet: DEFAULT_INK_SET,
     slideHintDone: false,
     shortcutsOn: true,
   };
@@ -43,6 +46,7 @@ export function loadPrefs(locale: string | undefined, store: Pick<Storage, 'getI
           ? saved.themeChoice
           : fallback.themeChoice,
       ground: saved.ground === 'home' ? 'home' : fallback.ground,
+      inkSet: isInkSetId(saved.inkSet) ? saved.inkSet : fallback.inkSet,
       slideHintDone: saved.slideHintDone === true,
       shortcutsOn: saved.shortcutsOn !== false,
     };

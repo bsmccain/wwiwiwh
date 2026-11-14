@@ -32,9 +32,13 @@ test.describe('in a browser that cannot draw the maps', () => {
     await app.press(app.moreButton);
     await app.press(app.menuChoice('Dark'));
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await app.press(app.menuChoice('Parchment'));
+    await expect(page.locator('html')).toHaveAttribute('data-inks', 'parchment');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(33, 26, 20)');
 
     await page.reload();
 
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-inks', 'parchment');
   });
 });

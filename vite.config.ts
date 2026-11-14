@@ -43,5 +43,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
+    // CSS is read as text by the test that holds it to the inks in src/app/theme.ts; nothing else imports any.
+    css: true,
   },
 });

@@ -43,6 +43,7 @@ function setup() {
     themeChoice: 'auto',
     theme: 'light',
     ground: 'away',
+    inkSet: 'classic',
     shortcutsOn: true,
     slideHintDone: false,
   });
@@ -64,7 +65,7 @@ function setup() {
         return () => themeListeners.delete(listener);
       },
     },
-    applyTheme: (theme) => applied.push(theme),
+    applyInks: (inks) => applied.push(inks.id),
     pageUrl: () => 'https://example.test/wwiwiwh/',
     savePrefs: (prefs) => saved.push(prefs),
     roads: roads.roads,
@@ -162,16 +163,18 @@ describe('controller', () => {
     expect(saved).toEqual([]);
     controller.toggleUnits();
     controller.setThemeChoice('dark');
+    controller.setInkSet('kingfisher');
     controller.setShortcutsOn(false);
     controller.finishSlideHint();
     controller.finishSlideHint();
     controller.toggleGround();
     expect(saved).toEqual([
-      { units: 'km', themeChoice: 'auto', ground: 'away', shortcutsOn: true, slideHintDone: false },
-      { units: 'km', themeChoice: 'dark', ground: 'away', shortcutsOn: true, slideHintDone: false },
-      { units: 'km', themeChoice: 'dark', ground: 'away', shortcutsOn: false, slideHintDone: false },
-      { units: 'km', themeChoice: 'dark', ground: 'away', shortcutsOn: false, slideHintDone: true },
-      { units: 'km', themeChoice: 'dark', ground: 'home', shortcutsOn: false, slideHintDone: true },
+      { units: 'km', themeChoice: 'auto', ground: 'away', inkSet: 'classic', shortcutsOn: true, slideHintDone: false },
+      { units: 'km', themeChoice: 'dark', ground: 'away', inkSet: 'classic', shortcutsOn: true, slideHintDone: false },
+      { units: 'km', themeChoice: 'dark', ground: 'away', inkSet: 'kingfisher', shortcutsOn: true, slideHintDone: false },
+      { units: 'km', themeChoice: 'dark', ground: 'away', inkSet: 'kingfisher', shortcutsOn: false, slideHintDone: false },
+      { units: 'km', themeChoice: 'dark', ground: 'away', inkSet: 'kingfisher', shortcutsOn: false, slideHintDone: true },
+      { units: 'km', themeChoice: 'dark', ground: 'home', inkSet: 'kingfisher', shortcutsOn: false, slideHintDone: true },
     ]);
   });
 
@@ -441,7 +444,7 @@ describe('controller', () => {
     expect(s.view).toBeNull();
   });
 
-  it('drives the map pair from mode, hide and theme changes', () => {
+  it('drives the map pair from mode, hide, theme and ink set changes', () => {
     const { store, dual, controller, applied, setSystemDark } = setup();
     controller.toggleSlide();
     expect(dual.slideMode).toBe(true);
@@ -458,12 +461,19 @@ describe('controller', () => {
 
     setSystemDark(true);
     expect(store.get().theme).toBe('dark');
-    expect(applied).toEqual(['dark']);
+    expect(applied).toEqual(['classic-dark']);
     expect(dual.styles).not.toBeNull();
     controller.setThemeChoice('light');
     expect(store.get().theme).toBe('light');
     setSystemDark(false);
-    expect(applied).toEqual(['dark', 'light']);
+    expect(applied).toEqual(['classic-dark', 'classic-light']);
+
+    dual.styles = null;
+    controller.setInkSet('thistle');
+    expect(applied).toEqual(['classic-dark', 'classic-light', 'thistle-light']);
+    expect(dual.styles).not.toBeNull();
+    controller.setInkSet('thistle');
+    expect(applied).toHaveLength(3);
   });
 
   it('restyles the maps when the ground changes hands, without touching the page theme', () => {

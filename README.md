@@ -21,6 +21,7 @@ If you grew up somewhere, you carry its distances around with you. wwiwiwh draws
 - **Land and water.** Parks, woods, built-up areas and water are shaded for one place at a time: Away at first, with Home drawn over it as streets only. Under More, "Land and water from" (or `T`) gives them to Home instead. Home then lies underneath and Away is drawn over it as streets only.
 - **Rings** draw round distances about the pin. **Hide Home** blinks the overlay off while you hold it, or latches on a quick tap. **Swap** exchanges the two places.
 - **Copy link** gives an address that reopens the same view. The address bar updates as you go, so Back returns to the previous pair of places.
+- **Colours.** More has seven sets of inks, each in a light and a dark version. Kingfisher (orange over blue) and Thistle (purple over green) keep Home and Away apart with red-green or blue-yellow colour blindness. Newsprint uses no colour at all. Stark is black and white, with every ink at 7:1 or better. Classic, Parchment and Blueprint are there for taste. The choice stays on your device.
 
 Measure gives straight lines. Drive gives distances by road and times for a car without traffic, both estimates from OpenStreetMap data. There is one of the two on the map at a time.
 
@@ -62,6 +63,7 @@ npm test               # unit tests
 npm run test:e2e       # browser tests against a production build
 npm run test:e2e:live  # one smoke test against the real tile service
 npm run build          # static site in dist/
+npm run inks           # rewrite src/styles/ink-sets.css after changing a colour in src/app/theme.ts
 ```
 
 `dist/` is a plain static site with no server side. It works from a sub-path, so any static host will do.

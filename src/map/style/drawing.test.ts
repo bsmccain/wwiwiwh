@@ -1,13 +1,13 @@
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import type { StyleSpecification } from 'maplibre-gl';
 import { describe, expect, it } from 'vitest';
-import { INKS } from '../../app/theme';
-import type { Theme } from '../../app/types';
+import { ALL_INKS, inksFor, type Inks } from '../../app/theme';
 import { NO_DRAWING, type Sheet, type SheetDrawing } from '../contracts';
 import { drawingLayers, drawingSources, REACH_SOURCE_ID, reachData, ROUTE_SOURCE_ID, routeData, withDrawing } from './drawing';
 import { createStyles } from './index';
 
-const THEMES: readonly Theme[] = ['light', 'dark'];
+const LIGHT = inksFor('classic', 'light');
+const DARK = inksFor('classic', 'dark');
 const SHEETS: readonly Sheet[] = ['home', 'away'];
 const route = [
   { lat: 51.5, lng: -0.12 },
@@ -22,24 +22,24 @@ const ring = [
 ];
 const drawing: SheetDrawing = { route, reach: [[ring, ring], [ring]] };
 
-function drawn(theme: Theme, sheet: Sheet, zoomOffset: number, what: SheetDrawing): StyleSpecification {
-  const styles = createStyles(theme);
+function drawn(inks: Inks, sheet: Sheet, zoomOffset: number, what: SheetDrawing): StyleSpecification {
+  const styles = createStyles(inks);
   const style = sheet === 'home' ? styles.overlay(zoomOffset) : styles.base;
   return withDrawing(style, styles.drawing(sheet, zoomOffset), what);
 }
 
 describe('a sheet with its drawing on top', () => {
-  const cases = THEMES.flatMap((theme) => SHEETS.flatMap((sheet) => [0, 0.35, -1.2].map((offset) => ({ theme, sheet, offset }))));
+  const cases = [LIGHT, DARK].flatMap((inks) => SHEETS.flatMap((sheet) => [0, 0.35, -1.2].map((offset) => ({ inks, id: inks.id, sheet, offset }))));
 
-  it.each(cases)('passes the MapLibre style validator: $sheet, $theme, offset $offset', ({ theme, sheet, offset }) => {
+  it.each(cases)('passes the MapLibre style validator: $sheet, $id, offset $offset', ({ inks, sheet, offset }) => {
     for (const what of [NO_DRAWING, drawing]) {
-      expect(validateStyleMin(drawn(theme, sheet, offset, what)).map((error) => error.message)).toEqual([]);
+      expect(validateStyleMin(drawn(inks, sheet, offset, what)).map((error) => error.message)).toEqual([]);
     }
   });
 
   it('keeps every layer of the sheet, in order, underneath', () => {
-    const styles = createStyles('light');
-    const style = drawn('light', 'away', 0, drawing);
+    const styles = createStyles(LIGHT);
+    const style = drawn(LIGHT, 'away', 0, drawing);
     const sheetIds = styles.base.layers.map((layer) => layer.id);
     expect(style.layers.slice(0, sheetIds.length).map((layer) => layer.id)).toEqual(sheetIds);
     expect(style.layers.slice(sheetIds.length).map((layer) => layer.id)).toEqual(['drive-reach-tint', 'drive-reach-edge', 'drive-route-casing', 'drive-route']);
@@ -47,39 +47,39 @@ describe('a sheet with its drawing on top', () => {
   });
 
   it('leaves the sheet’s own style as it was', () => {
-    const styles = createStyles('dark');
+    const styles = createStyles(DARK);
     const before = JSON.stringify(styles.base);
-    drawn('dark', 'away', 0, drawing);
+    drawn(DARK, 'away', 0, drawing);
     withDrawing(styles.base, styles.drawing('away', 0), drawing);
     expect(JSON.stringify(styles.base)).toBe(before);
   });
 
   it('carries the drawing in the style itself, so that a restyle cannot drop it', () => {
-    const style = drawn('light', 'home', 0, drawing);
+    const style = drawn(LIGHT, 'home', 0, drawing);
     expect(style.sources[ROUTE_SOURCE_ID]).toEqual({ type: 'geojson', data: routeData(route) });
     expect(style.sources[REACH_SOURCE_ID]).toEqual({ type: 'geojson', data: reachData(drawing.reach) });
   });
 });
 
 describe('the layers of a drawing', () => {
-  it.each(THEMES)('prints the route in the sheet’s own ink, cased in the key ink: %s', (theme) => {
+  it.each(ALL_INKS)('prints the route in the sheet’s own ink, cased in the key ink: $id', (inks) => {
     for (const sheet of SHEETS) {
-      const layers = drawingLayers(theme, sheet);
+      const layers = drawingLayers(inks, sheet);
       const paint = (id: string): Record<string, unknown> => layers.find((layer) => layer.id === id)?.paint as Record<string, unknown>;
-      expect(paint('drive-route')['line-color']).toBe(sheet === 'home' ? INKS[theme].home : INKS[theme].away);
-      expect(paint('drive-route-casing')['line-color']).toBe(INKS[theme].key);
+      expect(paint('drive-route')['line-color']).toBe(sheet === 'home' ? inks.home : inks.away);
+      expect(paint('drive-route-casing')['line-color']).toBe(inks.key);
     }
   });
 
   it('prints Home’s reach in the Home ink and Away’s in the ink Away is lettered in', () => {
-    const tint = (sheet: Sheet): unknown => (drawingLayers('light', sheet)[0]?.paint as Record<string, unknown>)['fill-color'];
-    expect(tint('home')).toBe(INKS.light.home);
-    expect(tint('away')).toBe(INKS.light.awayDeep);
+    const tint = (sheet: Sheet): unknown => (drawingLayers(LIGHT, sheet)[0]?.paint as Record<string, unknown>)['fill-color'];
+    expect(tint('home')).toBe(LIGHT.home);
+    expect(tint('away')).toBe(LIGHT.awayDeep);
   });
 
   it('moves the zoom stops of the route’s width with Home’s zoom offset, so it is as heavy on either sheet', () => {
     const width = (zoomOffset: number): unknown[] => {
-      const paint = drawingLayers('light', 'home', zoomOffset).find((layer) => layer.id === 'drive-route')?.paint as Record<string, unknown>;
+      const paint = drawingLayers(LIGHT, 'home', zoomOffset).find((layer) => layer.id === 'drive-route')?.paint as Record<string, unknown>;
       return paint['line-width'] as unknown[];
     };
     const flat = width(0);
@@ -91,9 +91,9 @@ describe('the layers of a drawing', () => {
   });
 
   it('asks the style factory for Away’s layers without any offset', () => {
-    const styles = createStyles('light');
-    expect(styles.drawing('away', 0.8)).toEqual(drawingLayers('light', 'away', 0));
-    expect(styles.drawing('home', 0.5)).toEqual(drawingLayers('light', 'home', 0.5));
+    const styles = createStyles(LIGHT);
+    expect(styles.drawing('away', 0.8)).toEqual(drawingLayers(LIGHT, 'away', 0));
+    expect(styles.drawing('home', 0.5)).toEqual(drawingLayers(LIGHT, 'home', 0.5));
   });
 });
 

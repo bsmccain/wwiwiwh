@@ -4,7 +4,7 @@ import type {
   LayerSpecification,
   LineLayerSpecification,
 } from 'maplibre-gl';
-import type { Theme } from '../../app/types';
+import type { Inks } from '../../app/theme';
 import { SOURCE_ID } from '../contracts';
 import {
   IS_TUNNEL,
@@ -162,7 +162,7 @@ function railLayer(palette: Palette): LineLayerSpecification {
  * The Away style. With the ground (`withGround`, the default) it is the sheet underneath; without it,
  * it keeps only the edge of its water, as a line, and has no paper, so the sheet below shows through.
  */
-export function awayLayers(palette: Palette, theme: Theme, withGround = true): LayerSpecification[] {
+export function awayLayers(palette: Palette, inks: Inks, withGround = true): LayerSpecification[] {
   const { away } = palette;
   const classColor = (cls: RoadClass): ExpressionSpecification => [
     'case',
@@ -189,7 +189,7 @@ export function awayLayers(palette: Palette, theme: Theme, withGround = true): L
     routeNumberLayer({
       roads: ['all', classIs('motorway'), ['<=', ['get', 'ref_length'], 6]],
       from: ROUTE_NUMBERS_FROM,
-      plate: routeImageId('away', theme),
+      plate: routeImageId('away', inks),
       numerals: away.lettering,
       spacing: 420,
     }),

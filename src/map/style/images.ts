@@ -1,12 +1,11 @@
 import type { Map as MapLibreMap, StyleImageMetadata } from 'maplibre-gl';
-import { INKS } from '../../app/theme';
-import type { Theme } from '../../app/types';
+import { ALL_INKS, type Inks } from '../../app/theme';
 import type { Sheet } from '../contracts';
 
 /**
  * Route-number plates. Away's motorway numbers sit in an outlined pill; Home's freeway numbers sit in a
  * solid box of Home ink. Each is one small image that MapLibre stretches around any number
- * (`icon-text-fit`), drawn here in the theme's inks because the styles carry no sprite sheet.
+ * (`icon-text-fit`), drawn here in the inks of the printing because the styles carry no sprite sheet.
  */
 interface Plate {
   /** Size of the unstretched image, in CSS pixels. */
@@ -16,7 +15,7 @@ interface Plate {
   /** Space kept between the numerals and the edge of the plate, in CSS pixels. */
   readonly padX: number;
   readonly padY: number;
-  readonly draw: (context: CanvasRenderingContext2D, plate: Plate, theme: Theme) => void;
+  readonly draw: (context: CanvasRenderingContext2D, plate: Plate, inks: Inks) => void;
 }
 
 const OUTLINE = 1.25;
@@ -33,8 +32,7 @@ const PLATES: Readonly<Record<Sheet, Plate>> = {
     radius: 8,
     padX: 5.5,
     padY: 2,
-    draw(context, plate, theme) {
-      const inks = INKS[theme];
+    draw(context, plate, inks) {
       roundedRect(context, OUTLINE / 2, plate);
       context.fillStyle = inks.sheet;
       context.fill();
@@ -49,25 +47,24 @@ const PLATES: Readonly<Record<Sheet, Plate>> = {
     radius: 2,
     padX: 3.5,
     padY: 2,
-    draw(context, plate, theme) {
+    draw(context, plate, inks) {
       roundedRect(context, 0, plate);
-      context.fillStyle = INKS[theme].home;
+      context.fillStyle = inks.home;
       context.fill();
     },
   },
 };
 
 const ID_PREFIX = 'wwiwiwh-route';
-const THEMES: readonly Theme[] = ['light', 'dark'];
 const SHEETS: readonly Sheet[] = ['away', 'home'];
 
-/** The image a route-number layer of this sheet and theme asks for. */
-export function routeImageId(sheet: Sheet, theme: Theme): string {
-  return `${ID_PREFIX}-${sheet}-${theme}`;
+/** The image a route-number layer of this sheet asks for in these inks. */
+export function routeImageId(sheet: Sheet, inks: Inks): string {
+  return `${ID_PREFIX}-${sheet}-${inks.id}`;
 }
 
-const KNOWN_IMAGES: ReadonlyMap<string, { sheet: Sheet; theme: Theme }> = new Map(
-  SHEETS.flatMap((sheet) => THEMES.map((theme) => [routeImageId(sheet, theme), { sheet, theme }] as const)),
+const KNOWN_IMAGES: ReadonlyMap<string, { sheet: Sheet; inks: Inks }> = new Map(
+  SHEETS.flatMap((sheet) => ALL_INKS.map((inks) => [routeImageId(sheet, inks), { sheet, inks }] as const)),
 );
 
 /** Image pixels per CSS pixel: whole, so the stretch zones fall on pixel boundaries. */
@@ -89,7 +86,7 @@ function addRouteImage(map: MapLibreMap, id: string): void {
     return;
   }
   context.scale(ratio, ratio);
-  plate.draw(context, plate, known.theme);
+  plate.draw(context, plate, known.inks);
 
   // Only the middle of the plate stretches; the corners (the whole round end of a pill) keep their shape.
   const corner = Math.ceil(plate.radius);
@@ -113,10 +110,10 @@ function addRouteImage(map: MapLibreMap, id: string): void {
  * load: an image that is already there is left alone.
  *
  * It also installs the map's missing-image resolver, so a plate that a tile asks for before this has
- * run (for instance the other theme's, right after a theme switch) is drawn on demand instead of being
+ * run (for instance another theme's or ink set's, right after a switch) is drawn on demand instead of being
  * reported missing.
  */
-export function registerRouteImages(map: MapLibreMap, sheet: Sheet, theme: Theme): void {
-  addRouteImage(map, routeImageId(sheet, theme));
+export function registerRouteImages(map: MapLibreMap, sheet: Sheet, inks: Inks): void {
+  addRouteImage(map, routeImageId(sheet, inks));
   map.setMissingStyleImageResolver((id) => addRouteImage(map, id));
 }

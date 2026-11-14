@@ -1,8 +1,7 @@
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import { describe, expect, it } from 'vitest';
-import { INKS } from '../../app/theme';
-import type { Theme } from '../../app/types';
+import { ALL_INKS, inksFor, type Inks } from '../../app/theme';
 import { SOURCE_ID } from '../contracts';
 import type { ZoomStops } from './expressions';
 import { routeImageId } from './images';
@@ -10,40 +9,40 @@ import { createStyles } from './index';
 import { AWAY_ROAD_STRENGTH } from './palette';
 import { AWAY_ROAD_WEIGHTS, HOME_ROAD_WEIGHTS, ROAD_CLASSES, ROAD_DATA_FROM } from './roads';
 
-const THEMES: readonly Theme[] = ['light', 'dark'];
+const LIGHT = inksFor('classic', 'light');
 const ZOOM_OFFSETS = [-1.2, 0, 0.35, 1.2];
 /** The only font stacks OpenFreeMap serves. A stack of two names is a different, missing, file. */
 const FONT_STACKS = [['Noto Sans Regular'], ['Noto Sans Bold'], ['Noto Sans Italic']];
 
 interface Case {
   readonly label: string;
-  readonly theme: Theme;
+  readonly inks: Inks;
   readonly style: StyleSpecification;
 }
 
-const AWAY_STYLES: Case[] = THEMES.map((theme) => ({
-  label: `away, ${theme}`,
-  theme,
-  style: createStyles(theme).base,
+const AWAY_STYLES: Case[] = ALL_INKS.map((inks) => ({
+  label: `away, ${inks.id}`,
+  inks,
+  style: createStyles(inks).base,
 }));
-const HOME_STYLES: Case[] = THEMES.flatMap((theme) =>
+const HOME_STYLES: Case[] = ALL_INKS.flatMap((inks) =>
   ZOOM_OFFSETS.map((offset) => ({
-    label: `home, ${theme}, offset ${offset}`,
-    theme,
-    style: createStyles(theme).overlay(offset),
+    label: `home, ${inks.id}, offset ${offset}`,
+    inks,
+    style: createStyles(inks).overlay(offset),
   })),
 );
 /** The same pair with the ground handed to Home: Away becomes line-work, Home the sheet underneath. */
-const AWAY_LINE_STYLES: Case[] = THEMES.map((theme) => ({
-  label: `away without the ground, ${theme}`,
-  theme,
-  style: createStyles(theme, 'home').base,
+const AWAY_LINE_STYLES: Case[] = ALL_INKS.map((inks) => ({
+  label: `away without the ground, ${inks.id}`,
+  inks,
+  style: createStyles(inks, 'home').base,
 }));
-const HOME_GROUND_STYLES: Case[] = THEMES.flatMap((theme) =>
+const HOME_GROUND_STYLES: Case[] = ALL_INKS.flatMap((inks) =>
   ZOOM_OFFSETS.map((offset) => ({
-    label: `home with the ground, ${theme}, offset ${offset}`,
-    theme,
-    style: createStyles(theme, 'home').overlay(offset),
+    label: `home with the ground, ${inks.id}, offset ${offset}`,
+    inks,
+    style: createStyles(inks, 'home').overlay(offset),
   })),
 );
 const ALL_STYLES = [...AWAY_STYLES, ...HOME_STYLES, ...AWAY_LINE_STYLES, ...HOME_GROUND_STYLES];
@@ -110,9 +109,9 @@ describe.each(ALL_STYLES)('$label', ({ style }) => {
   });
 });
 
-describe.each(AWAY_STYLES)('$label', ({ style, theme }) => {
+describe.each(AWAY_STYLES)('$label', ({ style, inks }) => {
   it('starts with the sheet', () => {
-    const sheet = { id: 'sheet', type: 'background', paint: { 'background-color': INKS[theme].sheet } };
+    const sheet = { id: 'sheet', type: 'background', paint: { 'background-color': inks.sheet } };
     expect(style.layers[0]).toEqual(sheet);
   });
 
@@ -121,7 +120,7 @@ describe.each(AWAY_STYLES)('$label', ({ style, theme }) => {
   });
 
   it('prints its two heaviest road classes in the full Away ink', () => {
-    const away = INKS[theme].away.toLowerCase();
+    const away = inks.away.toLowerCase();
     for (const id of ['road-motorway', 'road-trunk']) {
       const road = layer(style, id);
       expect(JSON.stringify(road.paint).toLowerCase(), id).toContain(away);
@@ -129,12 +128,12 @@ describe.each(AWAY_STYLES)('$label', ({ style, theme }) => {
     expect(JSON.stringify(layer(style, 'road-minor').paint).toLowerCase()).not.toContain(away);
   });
 
-  it('puts route numbers on the Away plate of its theme', () => {
-    expect(layer(style, 'route-numbers').layout).toMatchObject({ 'icon-image': routeImageId('away', theme) });
+  it('puts route numbers on the Away plate of its own inks', () => {
+    expect(layer(style, 'route-numbers').layout).toMatchObject({ 'icon-image': routeImageId('away', inks) });
   });
 });
 
-describe.each(HOME_STYLES)('$label', ({ style, theme }) => {
+describe.each(HOME_STYLES)('$label', ({ style, inks }) => {
   it('has no ground, so Away shows through', () => {
     expect(style.layers.map((candidate) => candidate.type)).not.toContain('background');
   });
@@ -148,17 +147,17 @@ describe.each(HOME_STYLES)('$label', ({ style, theme }) => {
   it('prints every line in the Home ink', () => {
     const lines = style.layers.filter((candidate) => candidate.type === 'line');
     expect(lines.length).toBeGreaterThan(8);
-    for (const line of lines) expect(line.paint?.['line-color'], line.id).toBe(INKS[theme].home);
+    for (const line of lines) expect(line.paint?.['line-color'], line.id).toBe(inks.home);
   });
 
   it('leaves rail to Away', () => {
     expect(JSON.stringify(style.layers)).not.toContain('"rail"');
   });
 
-  it('puts route numbers on the Home plate of its theme, lettered in the sheet colour', () => {
+  it('puts route numbers on the Home plate of its own inks, lettered in the sheet colour', () => {
     const numbers = layer(style, 'route-numbers');
-    expect(numbers.layout).toMatchObject({ 'icon-image': routeImageId('home', theme) });
-    expect(numbers.paint).toMatchObject({ 'text-color': INKS[theme].sheet });
+    expect(numbers.layout).toMatchObject({ 'icon-image': routeImageId('home', inks) });
+    expect(numbers.paint).toMatchObject({ 'text-color': inks.sheet });
   });
 
   it('keeps the freeways on top of the other roads', () => {
@@ -170,18 +169,18 @@ describe.each(HOME_STYLES)('$label', ({ style, theme }) => {
 
 describe('the ground', () => {
   it('is on Away unless Home is given it', () => {
-    expect(createStyles('light').ground).toBe('away');
-    expect(createStyles('light', 'home').ground).toBe('home');
+    expect(createStyles(LIGHT).ground).toBe('away');
+    expect(createStyles(LIGHT, 'home').ground).toBe('home');
   });
 
   it('never tints built-up land from tiles that carry only scattered plots of it', () => {
-    const builtUp = (offset: number) => layer(createStyles('light', 'home').overlay(offset), 'built-up');
+    const builtUp = (offset: number) => layer(createStyles(LIGHT, 'home').overlay(offset), 'built-up');
     // Home above Away: its tiles turn patchy at its own zoom 14, before Away gets to 14.
     expect(builtUp(1.2).maxzoom).toBe(14);
     expect(paintExpression(builtUp(1.2), 'fill-layer-opacity').slice(-4)).toEqual([13, 1, 14, 0]);
     // Home below Away: the tint bows out with Away's, at Away zoom 14.
     expect(builtUp(-1.2).maxzoom).toBe(12.8);
-    expect(layer(createStyles('light').base, 'built-up').maxzoom).toBe(14);
+    expect(layer(createStyles(LIGHT).base, 'built-up').maxzoom).toBe(14);
   });
 });
 
@@ -199,9 +198,9 @@ describe.each(AWAY_LINE_STYLES)('$label', ({ style }) => {
   });
 });
 
-describe.each(HOME_GROUND_STYLES)('$label', ({ style, theme }) => {
+describe.each(HOME_GROUND_STYLES)('$label', ({ style, inks }) => {
   it('starts with the sheet and prints the tints of land and water before its own lines', () => {
-    expect(style.layers[0]).toMatchObject({ id: 'sheet', type: 'background', paint: { 'background-color': INKS[theme].sheet } });
+    expect(style.layers[0]).toMatchObject({ id: 'sheet', type: 'background', paint: { 'background-color': inks.sheet } });
     const ids = style.layers.map((candidate) => candidate.id);
     for (const id of ['built-up', 'woods', 'parks', 'water']) {
       expect(layer(style, id).type, id).toBe('fill');
@@ -215,12 +214,12 @@ describe.each(HOME_GROUND_STYLES)('$label', ({ style, theme }) => {
   });
 
   it('still prints its roads in the Home ink', () => {
-    expect(layer(style, 'road-motorway').paint?.['line-color' as never]).toBe(INKS[theme].home);
+    expect(layer(style, 'road-motorway').paint?.['line-color' as never]).toBe(inks.home);
   });
 });
 
 describe('Home zoom offset', () => {
-  const styles = createStyles('light');
+  const styles = createStyles(LIGHT);
 
   it.each([-1.2, 0.35, 1.2])('moves every zoom threshold by %f', (offset) => {
     const flat = styles.overlay(0);

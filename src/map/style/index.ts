@@ -19,26 +19,25 @@ function sheetStyle(name: string, layers: LayerSpecification[]): StyleSpecificat
     name,
     glyphs: GLYPHS,
     sources: { [SOURCE_ID]: { type: 'vector', url: TILES } },
-    // A restyle (new theme, new zoom offset) lands at once; the app decides what moves and when.
+    // A restyle (new inks, new zoom offset) lands at once; the app decides what moves and when.
     transition: { duration: 0, delay: 0 },
     layers,
   };
 }
 
 /**
- * The two styles of the printed sheet for a theme: Away in one cool ink, Home as warm line-work. The
- * `ground` sheet also prints the flat tints of land and water and lies underneath; by default that is
- * Away, the quiet base with Home overprinted on it.
+ * The two styles of the printed sheet in one set of inks: Away in one ink, Home as heavier line-work
+ * in the other. The `ground` sheet also prints the flat tints of land and water and lies underneath;
+ * by default that is Away, the quiet base with Home overprinted on it.
  */
-export const createStyles: StyleFactory = (theme, ground = 'away') => {
-  const palette = paletteFor(theme);
+export const createStyles: StyleFactory = (inks, ground = 'away') => {
+  const palette = paletteFor(inks);
   const stepped = (zoomOffset: number): number => Math.round(zoomOffset / ZOOM_OFFSET_STEP) * ZOOM_OFFSET_STEP;
   return {
     ground,
-    base: sheetStyle(`wwiwiwh away, ${theme}`, awayLayers(palette, theme, ground === 'away')),
-    overlay: (zoomOffset) =>
-      sheetStyle(`wwiwiwh home, ${theme}`, homeLayers(palette, theme, stepped(zoomOffset), ground === 'home')),
-    drawing: (sheet, zoomOffset) => drawingLayers(theme, sheet, sheet === 'home' ? stepped(zoomOffset) : 0),
-    prepare: (map, sheet) => registerRouteImages(map, sheet, theme),
+    base: sheetStyle(`wwiwiwh away, ${inks.id}`, awayLayers(palette, inks, ground === 'away')),
+    overlay: (zoomOffset) => sheetStyle(`wwiwiwh home, ${inks.id}`, homeLayers(palette, inks, stepped(zoomOffset), ground === 'home')),
+    drawing: (sheet, zoomOffset) => drawingLayers(inks, sheet, sheet === 'home' ? stepped(zoomOffset) : 0),
+    prepare: (map, sheet) => registerRouteImages(map, sheet, inks),
   };
 };

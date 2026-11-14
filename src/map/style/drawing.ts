@@ -1,6 +1,5 @@
 import type { GeoJSONSourceSpecification, LayerSpecification, SourceSpecification, StyleSpecification } from 'maplibre-gl';
-import { INKS } from '../../app/theme';
-import type { Theme } from '../../app/types';
+import type { Inks } from '../../app/theme';
 import type { LngLat, Outline } from '../../geo/types';
 import type { Sheet, SheetDrawing } from '../contracts';
 import { widthByZoom } from './expressions';
@@ -60,8 +59,7 @@ export function drawingSources(drawing: SheetDrawing): Record<string, SourceSpec
  * roads never use. Every zoom is an AWAY zoom: `zoomOffset` is how far above Away the sheet's own map runs
  * (nothing for Away itself), so that a route is as heavy on either sheet.
  */
-export function drawingLayers(theme: Theme, sheet: Sheet, zoomOffset = 0): LayerSpecification[] {
-  const inks = INKS[theme];
+export function drawingLayers(inks: Inks, sheet: Sheet, zoomOffset = 0): LayerSpecification[] {
   const ink = sheet === 'home' ? inks.home : inks.awayDeep;
   const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
   const layers: LayerSpecification[] = [

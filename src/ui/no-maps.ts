@@ -1,7 +1,7 @@
 import { savePrefs } from '../app/prefs';
 import type { Store } from '../app/store';
-import { resolveTheme } from '../app/theme';
-import type { AppState, Theme } from '../app/types';
+import { inksFor, resolveTheme, type Inks } from '../app/theme';
+import type { AppState } from '../app/types';
 import type { MapUnavailableError } from '../map/engine';
 import { createCollar, type Collar, type CollarActions } from './collar';
 import type { MoreMenuOptions } from './more-menu';
@@ -35,7 +35,7 @@ export function startWithoutMaps(deps: {
   store: Store<AppState>;
   overlays: Overlays;
   systemPrefersDark: () => boolean;
-  applyTheme: (theme: Theme) => void;
+  applyInks: (inks: Inks) => void;
   openMenu: (anchor: HTMLElement, actions: MoreMenuOptions['actions'], mapReady: boolean, onPinByAddress: () => void) => void;
 }): Collar {
   const { error, store } = deps;
@@ -49,11 +49,15 @@ export function startWithoutMaps(deps: {
     setThemeChoice(themeChoice) {
       const theme = resolveTheme(themeChoice, deps.systemPrefersDark());
       store.set({ themeChoice, theme });
-      deps.applyTheme(theme);
+      deps.applyInks(inksFor(store.get().inkSet, theme));
+    },
+    setInkSet(inkSet) {
+      store.set({ inkSet });
+      deps.applyInks(inksFor(inkSet, store.get().theme));
     },
   };
-  store.subscribe(({ units, themeChoice, ground, shortcutsOn, slideHintDone }) =>
-    savePrefs({ units, themeChoice, ground, shortcutsOn, slideHintDone }),
+  store.subscribe(({ units, themeChoice, ground, inkSet, shortcutsOn, slideHintDone }) =>
+    savePrefs({ units, themeChoice, ground, inkSet, shortcutsOn, slideHintDone }),
   );
 
   const collar: Collar = createCollar({

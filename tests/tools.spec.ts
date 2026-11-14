@@ -178,7 +178,7 @@ test.describe('appearance', () => {
       const { dual } = window.__wwiwiwhWatch.app();
       return [dual.base.getStyle().name, dual.overlay.getStyle().name];
     });
-    expect(styleNames).toEqual(['wwiwiwh away, dark', 'wwiwiwh home, dark']);
+    expect(styleNames).toEqual(['wwiwiwh away, classic-dark', 'wwiwiwh home, classic-dark']);
   });
 
   test('the choice of theme is kept across a reload', async ({ app, page }) => {
@@ -192,6 +192,60 @@ test.describe('appearance', () => {
     expect((await app.state()).themeChoice).toBe('dark');
     await app.press(app.moreButton);
     await expect(app.menuChoice('Dark')).toBeChecked();
+  });
+
+  test('choosing colours reprints the page and the maps, in light and in dark', async ({ app, page }) => {
+    const styleNames = (): Promise<(string | undefined)[]> =>
+      page.evaluate(() => {
+        const { dual } = window.__wwiwiwhWatch.app();
+        return [dual.base.getStyle().name, dual.overlay.getStyle().name];
+      });
+    await expect(page.locator('html')).toHaveAttribute('data-inks', 'classic');
+
+    await app.press(app.moreButton);
+    await expect(app.menuChoice('Classic')).toBeChecked();
+    await app.press(app.menuChoice('Kingfisher'));
+
+    await expect(page.locator('html')).toHaveAttribute('data-inks', 'kingfisher');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(246, 246, 241)');
+    await expect(app.menu.locator('.menu__note').filter({ hasText: 'Orange over blue' })).toBeVisible();
+    await app.drawn();
+    expect(await styleNames()).toEqual(['wwiwiwh away, kingfisher-light', 'wwiwiwh home, kingfisher-light']);
+
+    await app.press(app.menuChoice('Dark'));
+
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(14, 26, 38)');
+    await expect(app.menuChoice('Kingfisher')).toBeChecked();
+    await app.drawn();
+    expect(await styleNames()).toEqual(['wwiwiwh away, kingfisher-dark', 'wwiwiwh home, kingfisher-dark']);
+  });
+
+  test('the colours are kept across a reload', async ({ app, page }) => {
+    await app.press(app.moreButton);
+    await app.press(app.menuChoice('Thistle'));
+    await expect(page.locator('html')).toHaveAttribute('data-inks', 'thistle');
+
+    await app.reload();
+
+    await expect(page.locator('html')).toHaveAttribute('data-inks', 'thistle');
+    expect((await app.state()).inkSet).toBe('thistle');
+    await app.press(app.moreButton);
+    await expect(app.menuChoice('Thistle')).toBeChecked();
+  });
+
+  test('saved colours are on the page before the app has started', async ({ app, page }) => {
+    await app.press(app.moreButton);
+    await app.press(app.menuChoice('Blueprint'));
+    await expect(page.locator('html')).toHaveAttribute('data-inks', 'blueprint');
+
+    // Without the app's own script, only public/theme.js and the style sheet are left to colour the page.
+    await page.route(/\/assets\/index-[^/]*\.js$/, (route) => route.fulfill({ contentType: 'text/javascript', body: '' }));
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.reload();
+
+    await expect(page.locator('html')).toHaveAttribute('data-inks', 'blueprint');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(10, 42, 102)');
   });
 
   test('with no choice made the theme follows the system', async ({ app, page }) => {
