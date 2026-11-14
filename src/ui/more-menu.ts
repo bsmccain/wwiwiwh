@@ -4,7 +4,7 @@ import { INK_SETS, inkSet } from '../app/theme';
 import type { AppState, InkSetId, Theme, ThemeChoice } from '../app/types';
 import type { Units } from '../geo/units';
 import type { Sheet } from '../map/contracts';
-import { clearRecent, keepsRecent, setKeepsRecent } from '../search/recent';
+import { clearRecent, keepsRecent, recentLeft, setKeepsRecent, whenRecentChanges } from '../search/recent';
 import { button, el, setText, uniqueId } from './dom';
 import { icon, inkSetSwatch, type IconName } from './icons';
 import { openMenuPanel } from './menu-panel';
@@ -135,6 +135,14 @@ function inkGroup(onChoose: (set: InkSetId) => void): { readonly element: HTMLEl
   };
 }
 
+/** What to say when switching Recent places and spots did not all go through. */
+function keepFailure(keep: boolean, saved: boolean, cleared: boolean): string {
+  if (keep) return "This browser wouldn't save On, so places and spots you pick won't be kept.";
+  if (!cleared && !saved) return "This browser wouldn't clear recent places and spots or save Off, so they may still be kept.";
+  if (!cleared) return "Off is saved, but this browser wouldn't clear the places and spots kept before.";
+  return "Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.";
+}
+
 /**
  * The More menu: the things that are set once and then left alone, and the long way round to the
  * pin's addresses. A popover rising from the collar on wide screens, a bottom sheet on phones, in
@@ -166,19 +174,15 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     ON_OFF_CHOICES,
     (value) => {
       const keep = value === 'on';
-      if (setKeepsRecent(keep)) {
+      const { saved, cleared } = setKeepsRecent(keep);
+      if (saved && cleared) {
         clearRecentItem.disabled = !keep;
         return;
       }
-      // Not saved. The menu closes so that the alert is seen and heard: on a phone the open sheet makes
-      // the rest of the page inert. It reads the setting afresh when it opens again.
+      // The menu closes so that the alert is seen and heard: on a phone the open sheet makes the rest
+      // of the page inert. It reads the setting afresh when it opens again.
       menu.close();
-      options.onRecentNotice(
-        keep
-          ? "This browser wouldn't save On, so places and spots you pick won't be kept."
-          : "Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.",
-        { alert: true },
-      );
+      options.onRecentNotice(keepFailure(keep, saved, cleared), { alert: true });
     },
     'Places and spots you pick are kept in this browser, to offer again. Off clears them and keeps no more.',
   );
@@ -199,10 +203,16 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     if (settings.some((setting) => state[setting] !== previous[setting])) drawChoices();
   });
   drawChoices();
-  // Kept in this browser, not in the app's state: read once, as the menu opens.
-  const keeping = keepsRecent();
-  keepRecent.select(keeping ? 'on' : 'off');
-  clearRecentItem.disabled = !keeping;
+  // Kept in this browser, not in the app's state: read as the menu opens, and again when another tab
+  // changes it. Clear stays offered while Off if a list may be left that could not be cleared.
+  const drawKeepRecent = (): void => {
+    const keeping = keepsRecent();
+    keepRecent.select(keeping ? 'on' : 'off');
+    clearRecentItem.disabled = !keeping && !recentLeft();
+  };
+  drawKeepRecent();
+  const otherTabs = new AbortController();
+  whenRecentChanges(drawKeepRecent, otherTabs.signal);
 
   const menu = openMenuPanel({
     title: 'More',
@@ -225,6 +235,7 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     byKeyboard: options.byKeyboard,
     onClose() {
       unsubscribe();
+      otherTabs.abort();
       options.onClose();
     },
   });
@@ -241,8 +252,8 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
   clearRecentItem.addEventListener(
     'click',
     closeThen(() => {
-      clearRecent();
-      options.onRecentNotice('Recent places and spots cleared from this browser.');
+      if (clearRecent()) options.onRecentNotice('Recent places and spots cleared from this browser.');
+      else options.onRecentNotice("This browser wouldn't clear recent places and spots, so they may still be kept.", { alert: true });
     }),
   );
 

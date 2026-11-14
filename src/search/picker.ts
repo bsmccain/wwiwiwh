@@ -61,8 +61,6 @@ function lookOf({ place, standing, note }: Row): RowLook {
  */
 export function openPlacePicker(options: PlacePickerOptions): PlacePicker {
   const { role, current, other } = options;
-  const recent = recentPlaces();
-
   const toRow = (place: Place, via?: string): Row => {
     if (samePlace(place, current)) return { place, standing: 'current', note: 'Current' };
     if (samePlace(place, other)) return { place, standing: 'taken', note: 'Already the other place' };
@@ -97,10 +95,14 @@ export function openPlacePicker(options: PlacePickerOptions): PlacePicker {
     rowsAre: { list: 'Places', one: 'place', many: 'places' },
     unavailable: UNAVAILABLE,
     noMatch,
-    browse: () => [
-      { label: 'Recent', rows: recent.map((place) => toRow(place)) },
-      { label: 'Well-known places', rows: wellKnownBeyond(recent) },
-    ],
+    // Read afresh each time the list is drawn, so that what another tab cleared goes from here too.
+    browse: () => {
+      const recent = recentPlaces();
+      return [
+        { label: 'Recent', rows: recent.map((place) => toRow(place)) },
+        { label: 'Well-known places', rows: wellKnownBeyond(recent) },
+      ];
+    },
     remote: { search: searchPlaces, memory: placeAnswers },
     answers,
     look: lookOf,

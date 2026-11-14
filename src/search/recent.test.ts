@@ -7,6 +7,7 @@ import {
   keepsRecent,
   keepsRecentIn,
   MAX_RECENT,
+  recentLeftIn,
   recentPlaces,
   recentPlacesIn,
   rememberPlace,
@@ -14,6 +15,7 @@ import {
   type RecentStorage,
   setKeepsRecent,
   setKeepsRecentIn,
+  whenRecentChanges,
 } from './recent';
 import { recentSpotsIn, rememberSpotIn } from './recent-spots';
 
@@ -192,7 +194,9 @@ describe('clearing and not keeping what was picked', () => {
 
   it('clears both the places and the spots, and nothing else', () => {
     const storage = withHistory();
-    clearRecentIn(storage);
+    expect(recentLeftIn(storage)).toBe(true);
+    expect(clearRecentIn(storage)).toBe(true);
+    expect(recentLeftIn(storage)).toBe(false);
     expect([...storage.items.keys()]).toEqual([PREFS[0]]);
     expect(storage.getItem(PREFS[0])).toBe(PREFS[1]);
     expect(recentPlacesIn(storage)).toEqual([]);
@@ -205,7 +209,7 @@ describe('clearing and not keeping what was picked', () => {
 
   it('switched off, clears what was kept and keeps no new picks', () => {
     const storage = withHistory();
-    setKeepsRecentIn(storage, false);
+    expect(setKeepsRecentIn(storage, false)).toEqual({ saved: true, cleared: true });
     expect(keepsRecentIn(storage)).toBe(false);
     expect(storage.getItem('wwiwiwh.recent-places')).toBeNull();
     expect(storage.getItem('wwiwiwh.recent-spots')).toBeNull();
@@ -228,7 +232,7 @@ describe('clearing and not keeping what was picked', () => {
   it('switched back on, keeps picks again', () => {
     const storage = new FakeStorage();
     setKeepsRecentIn(storage, false);
-    setKeepsRecentIn(storage, true);
+    expect(setKeepsRecentIn(storage, true)).toEqual({ saved: true, cleared: true });
     expect(keepsRecentIn(storage)).toBe(true);
     rememberPlaceIn(storage, tokyo);
     expect(recentPlacesIn(storage)).toEqual([tokyo]);
@@ -246,7 +250,7 @@ describe('clearing and not keeping what was picked', () => {
       }
       setItem(key, value);
     };
-    expect(setKeepsRecentIn(storage, false)).toBe(true);
+    expect(setKeepsRecentIn(storage, false)).toEqual({ saved: true, cleared: true });
     expect(keepsRecentIn(storage)).toBe(false);
     rememberPlaceIn(storage, tokyo);
     rememberSpotIn(storage, downingStreet);
@@ -259,9 +263,46 @@ describe('clearing and not keeping what was picked', () => {
     storage.setItem = () => {
       throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
     };
-    expect(setKeepsRecentIn(storage, false)).toBe(false);
+    expect(setKeepsRecentIn(storage, false)).toEqual({ saved: false, cleared: true });
     // What could be cleared was cleared all the same.
     expect(recentPlacesIn(storage)).toEqual([]);
+  });
+
+  it('says so when "on" cannot be saved', () => {
+    const storage = new FakeStorage();
+    setKeepsRecentIn(storage, false);
+    storage.removeItem = () => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    };
+    expect(setKeepsRecentIn(storage, true)).toEqual({ saved: false, cleared: true });
+    expect(keepsRecentIn(storage)).toBe(false);
+  });
+
+  for (const key of ['wwiwiwh.recent-places', 'wwiwiwh.recent-spots']) {
+    it(`does not claim to have cleared what it could not remove (${key})`, () => {
+      const storage = withHistory();
+      const removeItem = storage.removeItem.bind(storage);
+      storage.removeItem = (other) => {
+        if (other === key) throw new DOMException('The operation is insecure.', 'SecurityError');
+        removeItem(other);
+      };
+      expect(clearRecentIn(storage)).toBe(false);
+      expect(recentLeftIn(storage)).toBe(true);
+
+      // Off is still saved, so nothing more is kept, but it says the old list stayed.
+      expect(setKeepsRecentIn(storage, false)).toEqual({ saved: true, cleared: false });
+      expect(keepsRecentIn(storage)).toBe(false);
+      expect(storage.getItem(key)).not.toBeNull();
+    });
+  }
+
+  it('cannot vouch for storage it cannot read', () => {
+    for (const storage of [null, brokenStorage]) {
+      expect(recentLeftIn(storage)).toBe(true);
+      expect(clearRecentIn(storage)).toBe(false);
+      expect(setKeepsRecentIn(storage, false)).toEqual({ saved: false, cleared: false });
+      expect(setKeepsRecentIn(storage, true)).toEqual({ saved: false, cleared: true });
+    }
   });
 
   it('never throws when storage is missing or refuses to work', () => {
@@ -276,11 +317,30 @@ describe('clearing and not keeping what was picked', () => {
   describe('in the browser', () => {
     afterEach(() => vi.unstubAllGlobals());
 
+    it('hear of another tab changing the lists or the setting, and of nothing else', () => {
+      const target = new EventTarget();
+      vi.stubGlobal('addEventListener', target.addEventListener.bind(target));
+      const heard = vi.fn();
+      const listening = new AbortController();
+      whenRecentChanges(heard, listening.signal);
+      const change = (key: string | null): void => {
+        const event = new Event('storage') as Event & { key: string | null };
+        event.key = key;
+        target.dispatchEvent(event);
+      };
+      for (const key of ['wwiwiwh.recent-places', 'wwiwiwh.recent-spots', 'wwiwiwh.keep-recent', null]) change(key);
+      change('wwiwiwh:prefs:v1');
+      expect(heard).toHaveBeenCalledTimes(4);
+      listening.abort();
+      change('wwiwiwh.recent-places');
+      expect(heard).toHaveBeenCalledTimes(4);
+    });
+
     it('use the browser’s localStorage', () => {
       const storage = new FakeStorage();
       vi.stubGlobal('localStorage', storage);
       rememberPlace(london);
-      clearRecent();
+      expect(clearRecent()).toBe(true);
       expect(recentPlaces()).toEqual([]);
       setKeepsRecent(false);
       expect(keepsRecent()).toBe(false);

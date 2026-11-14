@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import type { WwiwiwhApp } from './support/app';
+import { WwiwiwhApp } from './support/app';
 
 /**
  * The places and spots picked before are kept in the browser, where the next person to use it would
@@ -145,6 +145,79 @@ test.describe('recent places and spots', () => {
     await app.press(app.moreButton);
     await expect(keepRecentChoice(app, 'Off')).toBeChecked();
     await expect(clearRecentButton(app)).toBeDisabled();
+  });
+
+  test('if the browser will not remove a list, Clear says so and stays offered', async ({ app, page }) => {
+    await pickAPlaceAndASpot(app);
+    await page.evaluate(() => {
+      const removeItem = Storage.prototype.removeItem;
+      Storage.prototype.removeItem = function (key: string) {
+        if (key === 'wwiwiwh.recent-spots') throw new DOMException('The operation is insecure.', 'SecurityError');
+        removeItem.call(this, key);
+      };
+    });
+
+    await app.press(app.moreButton);
+    await app.press(clearRecentButton(app));
+    await expect(app.page.locator('.toasts [role="alert"] .toast')).toHaveText(
+      "This browser wouldn't clear recent places and spots, so they may still be kept.",
+    );
+    await expect(app.page.locator('.toasts [role="status"] .toast')).toHaveCount(0);
+    const [places, spots] = await kept(page);
+    expect(places).toBeNull();
+    expect(spots).toContain('10 Downing Street');
+
+    // Off then stops new picks, but does not claim the old list went, and Clear stays offered.
+    await app.press(app.moreButton);
+    await app.press(keepRecentChoice(app, 'Off'));
+    await expect(app.menu).toBeHidden();
+    await expect(app.page.locator('.toasts [role="alert"] .toast')).toHaveText(
+      "Off is saved, but this browser wouldn't clear the places and spots kept before.",
+    );
+    await app.press(app.moreButton);
+    await expect(keepRecentChoice(app, 'Off')).toBeChecked();
+    await expect(clearRecentButton(app)).toBeEnabled();
+  });
+
+  test('cleared in one tab, go from a Recent list open in another', async ({ app, context }) => {
+    await pickAPlaceAndASpot(app);
+    const other = new WwiwiwhApp(await context.newPage(), app.touch);
+    await other.open(NO_TRIP);
+    await other.press(other.legendRow('away'));
+    await expect(other.pickerGroup('Recent').locator('.picker__name')).toContainText(['Tokyo']);
+
+    await app.page.bringToFront();
+    await app.press(app.moreButton);
+    await app.press(clearRecentButton(app));
+    await expect(app.toast).toHaveText('Recent places and spots cleared from this browser.');
+
+    await expect(other.pickerGroup('Recent')).toHaveCount(0);
+    await expect(other.picker).toBeVisible();
+  });
+
+  test('switched off in one tab, go from a Recent list open in another, and its menu follows', async ({ app, context }) => {
+    await pickAPlaceAndASpot(app);
+    const other = new WwiwiwhApp(await context.newPage(), app.touch);
+    await other.open(NO_TRIP);
+    await other.press(other.sentenceSpot('away'));
+    await expect(other.pickerGroup('Recent').locator('.picker__name')).toHaveText(['10 Downing Street']);
+
+    await app.page.bringToFront();
+    await app.press(app.moreButton);
+    await app.press(keepRecentChoice(app, 'Off'));
+    await expect(keepRecentChoice(app, 'Off')).toBeChecked();
+
+    await expect(other.picker.getByRole('option')).toHaveText(['The centre of London']);
+
+    // A More menu open in the other tab shows the change too.
+    await other.page.bringToFront();
+    await other.closePicker();
+    await other.press(other.moreButton);
+    await expect(keepRecentChoice(other, 'Off')).toBeChecked();
+    await app.page.bringToFront();
+    await app.press(keepRecentChoice(app, 'On'));
+    await expect(keepRecentChoice(other, 'On')).toBeChecked();
+    await expect(clearRecentButton(other)).toBeEnabled();
   });
 
   test('clearing them leaves the display settings as they were', async ({ app, page }) => {

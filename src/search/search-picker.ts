@@ -2,6 +2,7 @@ import './picker.css';
 import { SHEET_QUERY, SHORT_PX } from '../app/breakpoints';
 import { restsOnPanel, watchLastInput } from './last-input';
 import { fitSheet, placePopover, visibleBand } from './picker-layout';
+import { whenRecentChanges } from './recent';
 import { createRemoteSearch, type RemoteSearchDeps, type RemoteState } from './remote-search';
 import { accessibleRowName } from './row-name';
 import { dismissByDragging } from './sheet-drag';
@@ -58,7 +59,7 @@ export interface SearchPickerOptions<T, A> {
   readonly unavailable: string;
   /** Said when the search has answered and there is nothing to list for it. */
   noMatch(query: string, answer: A): string;
-  /** What to list before anything is typed. */
+  /** What to list before anything is typed. Asked again whenever the list is drawn, and when another tab changes the recent lists. */
   browse(): readonly Section<T>[];
   /** How to look up what is typed. */
   readonly remote: RemoteSearchDeps<A>;
@@ -558,6 +559,8 @@ export function openSearchPicker<T, A>(options: SearchPickerOptions<T, A>): Sear
   );
 
   window.addEventListener('resize', layOut, listening);
+  // Quietly: the change was made in another tab, not by anything done here.
+  whenRecentChanges(() => render(true, false), listeners.signal);
   sheetScreen.addEventListener('change', layOut, listening);
   window.visualViewport?.addEventListener('resize', layOut, listening);
   window.visualViewport?.addEventListener('scroll', layOut, listening);
