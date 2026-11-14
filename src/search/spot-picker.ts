@@ -127,7 +127,6 @@ export function openSpotPicker(options: SpotPickerOptions): PlacePicker {
         };
   /** The one row that is not a spot with a name of its own. */
   const centre: ListedSpot = { name: `The centre of ${place.name}`, context: '', position: place.center };
-  const recent = recentSpotsNear(place.center, RECENT_SHOWN);
 
   return openSearchPicker<ListedSpot, SpotHit[]>({
     anchor: options.anchor,
@@ -137,7 +136,8 @@ export function openSpotPicker(options: SpotPickerOptions): PlacePicker {
     rowsAre: ROWS_ARE,
     unavailable: UNAVAILABLE,
     noMatch: (query) => `No spot matches “${query}” in or near ${place.name}. ${ADVICE}`,
-    browse: () => [{ rows: [centre] }, { label: 'Recent', rows: recent }],
+    // Read afresh each time the list is drawn, so that what another tab cleared goes from here too.
+    browse: () => [{ rows: [centre] }, { label: 'Recent', rows: recentSpotsNear(place.center, RECENT_SHOWN) }],
     remote: {
       ...SPOT_SEARCH_MANNERS,
       search: (query, signal) => searchSpots(query, place.center, signal),
@@ -198,7 +198,6 @@ export function openDriveEndPicker(options: DriveEndPickerOptions): PlacePicker 
     spots.filter((spot) => distanceMeters(spot.position, start.position) > SAME_SPOT_METERS);
   /** The one row that is not a spot with a name of its own. */
   const centre: ListedSpot = { name: `The centre of ${place.name}`, context: '', position: place.center };
-  const recent = recentSpotsNear(place.center, RECENT_SHOWN);
 
   return openSearchPicker<ListedSpot, SpotHit[]>({
     anchor: options.anchor,
@@ -211,7 +210,7 @@ export function openDriveEndPicker(options: DriveEndPickerOptions): PlacePicker 
       found.length > 0
         ? `Everything that matches “${query}” is where the drive starts. Try another address or landmark.`
         : `No spot matches “${query}” in or near ${place.name}. ${ADVICE}`,
-    browse: () => [{ rows: elsewhere([centre]) }, { label: 'Recent', rows: elsewhere(recent) }],
+    browse: () => [{ rows: elsewhere([centre]) }, { label: 'Recent', rows: elsewhere(recentSpotsNear(place.center, RECENT_SHOWN)) }],
     remote: {
       ...SPOT_SEARCH_MANNERS,
       search: (query, signal) => searchSpots(query, place.center, signal),
@@ -248,10 +247,10 @@ function openBothPlacesPicker(
   const { home, away, skip } = options;
   const places: BothSheets<Place> = { home, away };
   const centres: BothSheets<LngLat> = { home: home.center, away: away.center };
-  const recent: BothSheets<readonly ListedSpot[]> = {
+  const recent = (): BothSheets<readonly ListedSpot[]> => ({
     home: recentSpotsNear(home.center, RECENT_SHOWN),
     away: recentSpotsNear(away.center, RECENT_SHOWN),
-  };
+  });
 
   const listBySheet = (label: (place: Place) => string, spots: BothSheets<readonly ListedSpot[]>): Section<Target>[] => {
     const shown = shareBetweenSheets(spots, centres, skip);
@@ -272,7 +271,7 @@ function openBothPlacesPicker(
       found.home.length + found.away.length > 0
         ? copy.allSkipped(query)
         : `No spot matches “${query}” in or near ${home.name} or ${away.name}. ${ADVICE}`,
-    browse: () => listBySheet((place) => `Recent in ${place.name}`, recent),
+    browse: () => listBySheet((place) => `Recent in ${place.name}`, recent()),
     remote: {
       ...SPOT_SEARCH_MANNERS,
       async search(query, signal) {

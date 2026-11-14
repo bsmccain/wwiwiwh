@@ -4,6 +4,7 @@ import { INK_SETS, inkSet } from '../app/theme';
 import type { AppState, InkSetId, Theme, ThemeChoice } from '../app/types';
 import type { Units } from '../geo/units';
 import type { Sheet } from '../map/contracts';
+import { clearRecent, keepsRecent, recentLeft, setKeepsRecent, whenRecentChanges } from '../search/recent';
 import { button, el, setText, uniqueId } from './dom';
 import { icon, inkSetSwatch, type IconName } from './icons';
 import { openMenuPanel } from './menu-panel';
@@ -28,6 +29,8 @@ export interface MoreMenuOptions {
   onPinByAddress(): void;
   onShortcuts(): void;
   onAbout(): void;
+  /** Says in one line what was done to the places and spots kept on this device; `alert` when it did not go as asked. */
+  onRecentNotice(message: string, options?: { alert?: boolean }): void;
   /** Called exactly once, however the menu closes. */
   onClose(): void;
 }
@@ -132,6 +135,14 @@ function inkGroup(onChoose: (set: InkSetId) => void): { readonly element: HTMLEl
   };
 }
 
+/** What to say when switching Recent places and spots did not all go through. */
+function keepFailure(keep: boolean, saved: boolean, cleared: boolean): string {
+  if (keep) return "This browser wouldn't save On, so places and spots you pick won't be kept.";
+  if (!cleared && !saved) return "This browser wouldn't clear recent places and spots or save Off, so they may still be kept.";
+  if (!cleared) return "Off is saved, but this browser wouldn't clear the places and spots kept before.";
+  return "Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.";
+}
+
 /**
  * The More menu: the things that are set once and then left alone, and the long way round to the
  * pin's addresses. A popover rising from the collar on wide screens, a bottom sheet on phones, in
@@ -158,6 +169,24 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     (value) => actions.setShortcutsOn(value === 'on'),
     `Off, a letter or digit pressed on its own does nothing. ${KEYS_THAT_STAY}`,
   );
+  const keepRecent = choiceGroup(
+    'Recent places and spots',
+    ON_OFF_CHOICES,
+    (value) => {
+      const keep = value === 'on';
+      const { saved, cleared } = setKeepsRecent(keep);
+      if (saved && cleared) {
+        clearRecentItem.disabled = !keep;
+        return;
+      }
+      // The menu closes so that the alert is seen and heard: on a phone the open sheet makes the rest
+      // of the page inert. It reads the setting afresh when it opens again.
+      menu.close();
+      options.onRecentNotice(keepFailure(keep, saved, cleared), { alert: true });
+    },
+    'Places and spots you pick are kept in this browser, to offer again. Off clears them and keeps no more.',
+  );
+  const clearRecentItem = actionItem('close', 'Clear recent places and spots', 'Links already shared and browser history stay');
   const shortcuts = button('menu__item', {}, [el('span', 'menu__item-word', {}, ['Keyboard shortcuts'])]);
   const about = button('menu__item', {}, [el('span', 'menu__item-word', {}, ['About wwiwiwh'])]);
 
@@ -174,6 +203,16 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     if (settings.some((setting) => state[setting] !== previous[setting])) drawChoices();
   });
   drawChoices();
+  // Kept in this browser, not in the app's state: read as the menu opens, and again when another tab
+  // changes it. Clear stays offered while Off if a list may be left that could not be cleared.
+  const drawKeepRecent = (): void => {
+    const keeping = keepsRecent();
+    keepRecent.select(keeping ? 'on' : 'off');
+    clearRecentItem.disabled = !keeping && !recentLeft();
+  };
+  drawKeepRecent();
+  const otherTabs = new AbortController();
+  whenRecentChanges(drawKeepRecent, otherTabs.signal);
 
   const menu = openMenuPanel({
     title: 'More',
@@ -186,6 +225,8 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
       ground.element,
       theme.element,
       inks.element,
+      keepRecent.element,
+      clearRecentItem,
       options.offerShortcuts && singleKeys.element,
       options.offerShortcuts && shortcuts,
       about,
@@ -194,6 +235,7 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     byKeyboard: options.byKeyboard,
     onClose() {
       unsubscribe();
+      otherTabs.abort();
       options.onClose();
     },
   });
@@ -207,6 +249,13 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
   pinByAddress.addEventListener('click', closeThen(() => options.onPinByAddress()));
   shortcuts.addEventListener('click', closeThen(() => options.onShortcuts()));
   about.addEventListener('click', closeThen(() => options.onAbout()));
+  clearRecentItem.addEventListener(
+    'click',
+    closeThen(() => {
+      if (clearRecent()) options.onRecentNotice('Recent places and spots cleared from this browser.');
+      else options.onRecentNotice("This browser wouldn't clear recent places and spots, so they may still be kept.", { alert: true });
+    }),
+  );
 
   return menu;
 }

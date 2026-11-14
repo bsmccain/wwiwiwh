@@ -20,6 +20,9 @@ class FakeStorage implements RecentStorage {
   setItem(key: string, value: string): void {
     this.items.set(key, value);
   }
+  removeItem(key: string): void {
+    this.items.delete(key);
+  }
 }
 
 const brokenStorage: RecentStorage = {
@@ -28,6 +31,9 @@ const brokenStorage: RecentStorage = {
   },
   setItem() {
     throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+  },
+  removeItem() {
+    throw new DOMException('The operation is insecure.', 'SecurityError');
   },
 };
 
