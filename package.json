@@ -1,7 +1,7 @@
 {
   "name": "wwiwiwh",
   "private": true,
-  "version": "0.3.0-alpha",
+  "version": "0.4.0-alpha",
   "description": "Lay the street map of a place you know over another place at the same scale.",
   "type": "module",
   "engines": {
