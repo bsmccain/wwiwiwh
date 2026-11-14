@@ -119,6 +119,12 @@ Addresses you search for are sent to Photon to be looked up. The two ends of a d
 - Subway and tram lines are missing below street zoom, because the tiles only carry them at zoom 14.
 - A place name can sit on top of a route-number shield.
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+This is a personal project. Issues and pull requests are welcome, but they may not get a response.
+
 ---
 
 Created in [T3 Code](https://t3.codes).
