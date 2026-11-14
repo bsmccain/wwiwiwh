@@ -75,7 +75,7 @@ test.describe('recent places and spots', () => {
 
     await app.press(app.moreButton);
     await app.press(keepRecentChoice(app, 'Off'));
-    await expect(app.toast).toHaveText('Recent places and spots cleared, and no more will be kept.');
+    await expect(keepRecentChoice(app, 'Off')).toBeChecked();
     await expect(clearRecentButton(app)).toBeDisabled();
     expect(await kept(page)).toEqual([null, null]);
     await page.keyboard.press('Escape');
@@ -102,7 +102,7 @@ test.describe('recent places and spots', () => {
     expect((await kept(page))[1]).toContain('10 Downing Street');
   });
 
-  test('if the browser will not save Off, the menu says so and stays On', async ({ app, page }) => {
+  test('if the browser will not save Off, the menu closes, says so, and stays On', async ({ app, page }) => {
     await pickAPlaceAndASpot(app);
     await page.evaluate(() => {
       const setItem = Storage.prototype.setItem;
@@ -114,12 +114,37 @@ test.describe('recent places and spots', () => {
 
     await app.press(app.moreButton);
     await app.press(keepRecentChoice(app, 'Off'));
-    await expect(app.page.locator('.toasts [role="alert"] .toast')).toHaveText(
-      "Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.",
-    );
+    // The menu closes, so that nothing covers the alert or makes it inert.
+    await expect(app.menu).toBeHidden();
+    const alert = app.page.locator('.toasts [role="alert"] .toast');
+    await expect(alert).toHaveText("Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.");
+    await expect(alert).toBeInViewport();
+    expect(await kept(page)).toEqual([null, null]);
+    await app.press(app.moreButton);
     await expect(keepRecentChoice(app, 'On')).toBeChecked();
     await expect(clearRecentButton(app)).toBeEnabled();
-    expect(await kept(page)).toEqual([null, null]);
+  });
+
+  test('if the browser will not save On, the menu closes, says so, and stays Off', async ({ app, page }) => {
+    await app.press(app.moreButton);
+    await app.press(keepRecentChoice(app, 'Off'));
+    await expect(keepRecentChoice(app, 'Off')).toBeChecked();
+    await page.evaluate(() => {
+      const removeItem = Storage.prototype.removeItem;
+      Storage.prototype.removeItem = function (key: string) {
+        if (key === 'wwiwiwh.keep-recent') throw new DOMException('The operation is insecure.', 'SecurityError');
+        removeItem.call(this, key);
+      };
+    });
+
+    await app.press(keepRecentChoice(app, 'On'));
+    await expect(app.menu).toBeHidden();
+    await expect(app.page.locator('.toasts [role="alert"] .toast')).toHaveText(
+      "This browser wouldn't save On, so places and spots you pick won't be kept.",
+    );
+    await app.press(app.moreButton);
+    await expect(keepRecentChoice(app, 'Off')).toBeChecked();
+    await expect(clearRecentButton(app)).toBeDisabled();
   });
 
   test('clearing them leaves the display settings as they were', async ({ app, page }) => {

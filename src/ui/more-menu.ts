@@ -166,15 +166,19 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     ON_OFF_CHOICES,
     (value) => {
       const keep = value === 'on';
-      if (!keep && !setKeepsRecent(false)) {
-        // The lists were cleared, but "off" could not be saved, so later picks would still be kept.
-        keepRecent.select('on');
-        options.onRecentNotice("Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.", { alert: true });
+      if (setKeepsRecent(keep)) {
+        clearRecentItem.disabled = !keep;
         return;
       }
-      if (keep) setKeepsRecent(true);
-      clearRecentItem.disabled = !keep;
-      options.onRecentNotice(keep ? 'Places and spots you pick will be kept again.' : 'Recent places and spots cleared, and no more will be kept.');
+      // Not saved. The menu closes so that the alert is seen and heard: on a phone the open sheet makes
+      // the rest of the page inert. It reads the setting afresh when it opens again.
+      menu.close();
+      options.onRecentNotice(
+        keep
+          ? "This browser wouldn't save On, so places and spots you pick won't be kept."
+          : "Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.",
+        { alert: true },
+      );
     },
     'Places and spots you pick are kept in this browser, to offer again. Off clears them and keeps no more.',
   );
