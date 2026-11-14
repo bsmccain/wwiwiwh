@@ -133,7 +133,7 @@ function start(root: HTMLElement): void {
       onPinByAddress,
       onShortcuts: () => shortcutsDialog.open(),
       onAbout: () => aboutDialog.open(),
-      onRecentNotice: (message) => toasts.show(message),
+      onRecentNotice: (message, notice) => toasts.show(message, notice),
       onClose: () => {
         menu = null;
         closed();

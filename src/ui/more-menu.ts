@@ -29,8 +29,8 @@ export interface MoreMenuOptions {
   onPinByAddress(): void;
   onShortcuts(): void;
   onAbout(): void;
-  /** Says in one line what was done to the places and spots kept on this device. */
-  onRecentNotice(message: string): void;
+  /** Says in one line what was done to the places and spots kept on this device; `alert` when it did not go as asked. */
+  onRecentNotice(message: string, options?: { alert?: boolean }): void;
   /** Called exactly once, however the menu closes. */
   onClose(): void;
 }
@@ -166,7 +166,13 @@ export function openMoreMenu(options: MoreMenuOptions): MoreMenu {
     ON_OFF_CHOICES,
     (value) => {
       const keep = value === 'on';
-      setKeepsRecent(keep);
+      if (!keep && !setKeepsRecent(false)) {
+        // The lists were cleared, but "off" could not be saved, so later picks would still be kept.
+        keepRecent.select('on');
+        options.onRecentNotice("Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.", { alert: true });
+        return;
+      }
+      if (keep) setKeepsRecent(true);
       clearRecentItem.disabled = !keep;
       options.onRecentNotice(keep ? 'Places and spots you pick will be kept again.' : 'Recent places and spots cleared, and no more will be kept.');
     },

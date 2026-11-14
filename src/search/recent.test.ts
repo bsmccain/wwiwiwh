@@ -234,6 +234,36 @@ describe('clearing and not keeping what was picked', () => {
     expect(recentPlacesIn(storage)).toEqual([tokyo]);
   });
 
+  it('switched off with storage full, clears first so that "off" itself can be saved', () => {
+    const storage = withHistory();
+    /** Full: no more than what is already there fits. */
+    const quota = [...storage.items].reduce((total, [key, value]) => total + key.length + value.length, 0);
+    const setItem = storage.setItem.bind(storage);
+    storage.setItem = (key, value) => {
+      const others = [...storage.items].filter(([other]) => other !== key);
+      if (others.reduce((total, [other, text]) => total + other.length + text.length, 0) + key.length + value.length > quota) {
+        throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      }
+      setItem(key, value);
+    };
+    expect(setKeepsRecentIn(storage, false)).toBe(true);
+    expect(keepsRecentIn(storage)).toBe(false);
+    rememberPlaceIn(storage, tokyo);
+    rememberSpotIn(storage, downingStreet);
+    expect(storage.getItem('wwiwiwh.recent-places')).toBeNull();
+    expect(storage.getItem('wwiwiwh.recent-spots')).toBeNull();
+  });
+
+  it('says so when "off" cannot be saved at all', () => {
+    const storage = withHistory();
+    storage.setItem = () => {
+      throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+    };
+    expect(setKeepsRecentIn(storage, false)).toBe(false);
+    // What could be cleared was cleared all the same.
+    expect(recentPlacesIn(storage)).toEqual([]);
+  });
+
   it('never throws when storage is missing or refuses to work', () => {
     for (const storage of [null, brokenStorage]) {
       expect(keepsRecentIn(storage)).toBe(false);

@@ -45,16 +45,21 @@ export function clearRecentIn(storage: RecentStorage | null): void {
   }
 }
 
-/** Switching it off clears what was kept, so that "off" never leaves a list behind it. */
-export function setKeepsRecentIn(storage: RecentStorage | null, keep: boolean): void {
-  if (!storage) return;
+/**
+ * Switching it off clears what was kept, so that "off" never leaves a list behind it. The lists go
+ * first: in storage that is full, they are what makes room for "off" to be saved. Returns whether the
+ * choice was saved; when "off" was not, later picks would still be kept.
+ */
+export function setKeepsRecentIn(storage: RecentStorage | null, keep: boolean): boolean {
+  if (!storage) return false;
+  if (!keep) clearRecentIn(storage);
   try {
     if (keep) storage.removeItem(KEEP_KEY);
     else storage.setItem(KEEP_KEY, 'off');
   } catch {
-    // Blocked storage keeps nothing either way.
+    // Blocked or full storage: told apart by reading it back.
   }
-  if (!keep) clearRecentIn(storage);
+  return keepsRecentIn(storage) === keep;
 }
 
 interface StoredPlace {
@@ -136,8 +141,8 @@ export function keepsRecent(): boolean {
   return keepsRecentIn(browserStorage());
 }
 
-export function setKeepsRecent(keep: boolean): void {
-  setKeepsRecentIn(browserStorage(), keep);
+export function setKeepsRecent(keep: boolean): boolean {
+  return setKeepsRecentIn(browserStorage(), keep);
 }
 
 export function clearRecent(): void {

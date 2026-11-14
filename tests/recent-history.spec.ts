@@ -102,6 +102,26 @@ test.describe('recent places and spots', () => {
     expect((await kept(page))[1]).toContain('10 Downing Street');
   });
 
+  test('if the browser will not save Off, the menu says so and stays On', async ({ app, page }) => {
+    await pickAPlaceAndASpot(app);
+    await page.evaluate(() => {
+      const setItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key: string, value: string) {
+        if (key === 'wwiwiwh.keep-recent') throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+        setItem.call(this, key, value);
+      };
+    });
+
+    await app.press(app.moreButton);
+    await app.press(keepRecentChoice(app, 'Off'));
+    await expect(app.page.locator('.toasts [role="alert"] .toast')).toHaveText(
+      "Recent places and spots cleared, but this browser wouldn't save Off, so new picks may be kept.",
+    );
+    await expect(keepRecentChoice(app, 'On')).toBeChecked();
+    await expect(clearRecentButton(app)).toBeEnabled();
+    expect(await kept(page)).toEqual([null, null]);
+  });
+
   test('clearing them leaves the display settings as they were', async ({ app, page }) => {
     await app.press(app.moreButton);
     await app.press(app.menuChoice('Dark'));
