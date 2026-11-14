@@ -12,7 +12,10 @@ import tokyo from './fixtures/tokyo.json';
 import {
   buildSearchUrl,
   identityOf,
+  MAX_ANSWER_BYTES,
+  MAX_FEATURES,
   MAX_RESULTS,
+  MAX_TEXT_LENGTH,
   normalisePhoton,
   type PhotonFeature,
   type PhotonResponse,
@@ -239,6 +242,50 @@ describe('searchPlaces', () => {
     const body = { features: [null, { properties: {} }, { properties: { name: 7 }, geometry: {} }, wrongId, wrongType, first] };
     vi.stubGlobal('fetch', vi.fn(async () => answer(body)));
     await expect(searchPlaces('san jose', never)).resolves.toEqual(rows({ features: [first] }));
+  });
+
+  /** `count` distinct cities, the way the security audit's probe built them. */
+  const cities = (count: number): unknown => ({
+    features: Array.from({ length: count }, (_, at) => ({
+      properties: { osm_type: 'N', osm_id: at + 1, osm_key: 'place', osm_value: 'city', type: 'city', name: `Town ${at}`, countrycode: 'US' },
+      geometry: { coordinates: [0, 0] },
+    })),
+  });
+
+  it('rejects an answer with far more features than were asked for, before reading them', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => answer(cities(8000))));
+    await expect(searchPlaces('town', never)).rejects.toMatchObject({ name: 'SearchUnavailableError', reason: 'bad-response' });
+    vi.stubGlobal('fetch', vi.fn(async () => answer(cities(MAX_FEATURES + 1))));
+    await expect(searchPlaces('town', never)).rejects.toMatchObject({ reason: 'bad-response' });
+    vi.stubGlobal('fetch', vi.fn(async () => answer(cities(MAX_FEATURES))));
+    await expect(searchPlaces('town', never)).resolves.toHaveLength(MAX_RESULTS);
+  });
+
+  it('rejects an answer far longer than any real one while it arrives, with or without its length', async () => {
+    const kilobyte = new TextEncoder().encode(' '.repeat(1024));
+    let sent = 0;
+    const endless = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        sent += kilobyte.byteLength;
+        controller.enqueue(kilobyte);
+      },
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(endless, { status: 200 })));
+    await expect(searchPlaces('san jose', never)).rejects.toMatchObject({ name: 'SearchUnavailableError', reason: 'bad-response' });
+    expect(sent).toBeLessThan(MAX_ANSWER_BYTES + 64 * 1024);
+    const declared = new Response('{"features":[]}', { status: 200, headers: { 'content-length': String(MAX_ANSWER_BYTES + 1) } });
+    vi.stubGlobal('fetch', vi.fn(async () => declared));
+    await expect(searchPlaces('san jose', never)).rejects.toMatchObject({ reason: 'bad-response' });
+  });
+
+  it('skips a feature with text longer than OpenStreetMap allows', async () => {
+    const [first] = sanJose.features;
+    const long = (key: string): unknown => ({ ...first, properties: { ...first?.properties, [key]: 'x'.repeat(MAX_TEXT_LENGTH + 1) } });
+    const longest = { ...first, properties: { ...first?.properties, name: 'x'.repeat(MAX_TEXT_LENGTH) } };
+    vi.stubGlobal('fetch', vi.fn(async () => answer({ features: [long('name'), long('state'), long('osm_value'), first] })));
+    await expect(searchPlaces('san jose', never)).resolves.toEqual(rows({ features: [first] }));
+    vi.stubGlobal('fetch', vi.fn(async () => answer({ features: [longest] })));
+    await expect(searchPlaces('san jose', never)).resolves.toHaveLength(1);
   });
 
   it('rejects with SearchUnavailableError on an HTTP error', async () => {

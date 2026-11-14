@@ -9,9 +9,9 @@ const LONGEST_NUMBER_CHUNKS = 7;
  * Reads an encoded polyline: latitude and longitude steps, each a zigzag-encoded integer cut into
  * five-bit chunks and written as printable characters. Returns null for text that is not one (a
  * number broken off half way, a latitude without its longitude, a position off the globe), so a
- * line is never drawn from an answer that was cut short.
+ * line is never drawn from an answer that was cut short, and for a line of more than `maxPoints`.
  */
-export function decodePolyline(text: string, digits: number = SHAPE_DIGITS): LngLat[] | null {
+export function decodePolyline(text: string, digits: number = SHAPE_DIGITS, maxPoints: number = Infinity): LngLat[] | null {
   const scale = 10 ** digits;
   const line: LngLat[] = [];
   let index = 0;
@@ -44,6 +44,7 @@ export function decodePolyline(text: string, digits: number = SHAPE_DIGITS): Lng
     const position = { lng: lng / scale, lat: lat / scale };
     // Written so that a position that is not a number at all is refused as well.
     if (!(Math.abs(position.lat) <= 90) || !(Math.abs(position.lng) <= 180)) return null;
+    if (line.length >= maxPoints) return null;
     line.push(position);
   }
   return line;

@@ -1,6 +1,7 @@
 import { distanceMeters } from '../geo/distance';
 import type { LngLat, Outline } from '../geo/types';
-import { decodePolyline } from './polyline';
+import { readJsonWithin } from '../net/read-json';
+import { decodePolyline, SHAPE_DIGITS } from './polyline';
 
 /*
  * Driving routes, and how far a drive reaches, from the public Valhalla server that FOSSGIS runs for
@@ -31,6 +32,21 @@ export const REACH_MAX_MINUTES = 60;
 export const REACH_MAX_KILOMETRES = 100;
 /** The longest drive the server will work out at all, in kilometres. */
 export const ROUTE_MAX_KILOMETRES = 1500;
+
+/*
+ * How much of an answer is read and drawn. A real answer is far inside each: the reach of 28 km about
+ * London is 1,563 points in 33 kB, and a route through London's streets is 33 points a kilometre, so
+ * the longest drive the server works out would be 50,000 points if it were all streets like those.
+ * Anything past these is refused as no answer.
+ */
+/** Longer than this, an answer is refused while it arrives. */
+export const MAX_ANSWER_BYTES = 4 * 1024 * 1024;
+/** Points on a route, all its legs together. */
+export const MAX_ROUTE_POINTS = 150_000;
+/** A route between two spots is one leg; a few more is room for the server to split one. */
+export const MAX_ROUTE_LEGS = 8;
+/** Corners in a reach, all its rings together. */
+export const MAX_REACH_POINTS = 100_000;
 
 /** Positions are sent as a link writes them, so that a drive reopened from its link asks the same question. */
 const COORD_DIGITS = 5;
@@ -162,23 +178,33 @@ function isAmount(value: unknown): value is number {
 export function parseRoute(body: unknown): DrivenRoute | null {
   if (!isRecord(body) || !isRecord(body['trip'])) return null;
   const { summary, legs, units } = body['trip'];
-  if (!isRecord(summary) || !Array.isArray(legs)) return null;
+  if (!isRecord(summary) || !Array.isArray(legs) || legs.length > MAX_ROUTE_LEGS) return null;
   const { length, time } = summary;
   // Kilometres were asked for; an answer in anything else is not an answer to the question.
   if (!isAmount(length) || !isAmount(time) || units !== 'kilometers') return null;
   const line: LngLat[] = [];
   for (const leg of legs) {
-    const shape = isRecord(leg) && typeof leg['shape'] === 'string' ? decodePolyline(leg['shape']) : null;
+    // One point more than is left, because the first point of every leg after the first is dropped.
+    const room = MAX_ROUTE_POINTS - line.length + (line.length > 0 ? 1 : 0);
+    const shape = isRecord(leg) && typeof leg['shape'] === 'string' ? decodePolyline(leg['shape'], SHAPE_DIGITS, room) : null;
     if (!shape) return null;
     // Each leg starts where the one before it ended.
-    line.push(...(line.length > 0 ? shape.slice(1) : shape));
+    for (let at = line.length > 0 ? 1 : 0; at < shape.length; at++) line.push(shape[at] as LngLat);
   }
   if (line.length < 2) return null;
   return { meters: length * 1000, seconds: time, line };
 }
 
-function parseRing(value: unknown): LngLat[] | null {
+/** How many more corners a reach may have: shared by every ring of one answer. */
+interface Budget {
+  left: number;
+}
+
+function parseRing(value: unknown, budget: Budget): LngLat[] | null {
   if (!Array.isArray(value)) return null;
+  // Refused before a single corner is read, so a ring that is too long costs no more than its length.
+  budget.left -= value.length;
+  if (budget.left < 0) return null;
   const ring: LngLat[] = [];
   for (const pair of value) {
     if (!Array.isArray(pair)) return null;
@@ -190,11 +216,11 @@ function parseRing(value: unknown): LngLat[] | null {
   return ring.length >= 4 ? ring : null;
 }
 
-function parsePolygon(value: unknown): LngLat[][] | null {
+function parsePolygon(value: unknown, budget: Budget): LngLat[][] | null {
   if (!Array.isArray(value) || value.length === 0) return null;
   const rings: LngLat[][] = [];
   for (const candidate of value) {
-    const ring = parseRing(candidate);
+    const ring = parseRing(candidate, budget);
     if (!ring) return null;
     rings.push(ring);
   }
@@ -204,6 +230,8 @@ function parsePolygon(value: unknown): LngLat[][] | null {
 /** Reads the one contour out of the server's answer, or null when the answer is not one. */
 export function parseReach(body: unknown): Outline | null {
   if (!isRecord(body) || !Array.isArray(body['features'])) return null;
+  // Every ring has at least four corners and every polygon at least one ring, so the corners bound them all.
+  const budget: Budget = { left: MAX_REACH_POINTS };
   const outline: LngLat[][][] = [];
   for (const feature of body['features'] as unknown[]) {
     const geometry = isRecord(feature) ? feature['geometry'] : null;
@@ -213,7 +241,7 @@ export function parseReach(body: unknown): Outline | null {
     const polygons: unknown[] = type === 'Polygon' ? [coordinates] : type === 'MultiPolygon' && Array.isArray(coordinates) ? coordinates : [];
     if (polygons.length === 0) return null;
     for (const candidate of polygons) {
-      const polygon = parsePolygon(candidate);
+      const polygon = parsePolygon(candidate, budget);
       if (!polygon) return null;
       outline.push(polygon);
     }
@@ -250,8 +278,9 @@ async function ask(url: string, signal: AbortSignal): Promise<Answer> {
   try {
     // No custom headers: the request stays CORS-simple, and the browser's Referer is how the server knows the site.
     const response = await fetch(url, { signal: request.signal });
-    const body: unknown = await response.json().catch(() => {
-      // A refusal that cannot be read is still a refusal; an answer that cannot be read is no answer.
+    const body: unknown = await readJsonWithin(response, MAX_ANSWER_BYTES).catch(() => {
+      // A refusal that cannot be read is still a refusal; an answer that cannot be read, or is far
+      // longer than any real one, is no answer. An abort or a timeout is told apart below.
       if (response.ok) throw new RoutingUnavailableError('bad-response');
       return null;
     });
