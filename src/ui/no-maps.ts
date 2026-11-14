@@ -45,13 +45,16 @@ export function startWithoutMaps(deps: {
     lineUpAgain: nothing,
     setUnits: (units) => store.set({ units }),
     setShortcutsOn: (shortcutsOn) => store.set({ shortcutsOn }),
+    setGround: (ground) => store.set({ ground }),
     setThemeChoice(themeChoice) {
       const theme = resolveTheme(themeChoice, deps.systemPrefersDark());
       store.set({ themeChoice, theme });
       deps.applyTheme(theme);
     },
   };
-  store.subscribe(({ units, themeChoice, shortcutsOn, slideHintDone }) => savePrefs({ units, themeChoice, shortcutsOn, slideHintDone }));
+  store.subscribe(({ units, themeChoice, ground, shortcutsOn, slideHintDone }) =>
+    savePrefs({ units, themeChoice, ground, shortcutsOn, slideHintDone }),
+  );
 
   const collar: Collar = createCollar({
     store,

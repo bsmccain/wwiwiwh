@@ -22,7 +22,9 @@ import type { Palette } from './palette';
 import { AWAY_ROAD_WEIGHTS, roadLayers, type RoadClass } from './roads';
 
 /*
- * Away is the sheet underneath: one cool ink, flat tints, thin roads. It owns every fill on the page.
+ * Away is drawn in one cool ink with thin roads. By default it is also the sheet underneath and owns
+ * every fill on the page (see `groundLayers`); when Home has the ground, Away is printed over it as
+ * line-work only.
  */
 
 const BUILT_UP_UNTIL = 14;
@@ -92,15 +94,48 @@ function waterLayers(palette: Palette): LayerSpecification[] {
     waterway('waterway-small', ['canal', 'stream'], SMALL_WATERWAYS_FROM, [[12.5, 0.4], [16, 1.4]]),
     waterway('waterway', ['river'], RIVERS_FROM, [[9, 0.5], [14, 2], [18, 5]]),
     tint('water', 'water', OPEN_WATER, water),
+    waterEdgeLayer(palette),
+  ];
+}
+
+function waterEdgeLayer(palette: Palette): LineLayerSpecification {
+  return {
+    id: 'water-edge',
+    type: 'line',
+    source: SOURCE_ID,
+    'source-layer': 'water',
+    filter: OPEN_WATER,
+    layout: { 'line-join': 'round' },
+    paint: { 'line-color': palette.away.waterEdge, 'line-width': 0.6 },
+  };
+}
+
+/**
+ * The ground of the page: the paper, built-up land, woods and parks, and water, all in flat tints.
+ * Exactly one of the two sheets prints it, and that sheet lies underneath. The layers are written in
+ * Away zooms; Home shifts them like the rest of its style.
+ *
+ * `zoomOffset` is how far above Away the printing map runs (Home's offset; 0 for Away). The built-up
+ * tint bows out where the tiles stop carrying it whole, which is a zoom of that map's own tiles: a
+ * map running above Away reaches it that much sooner in Away zooms.
+ */
+export function groundLayers(palette: Palette, zoomOffset = 0): LayerSpecification[] {
+  const { away } = palette;
+  const builtUpUntil = BUILT_UP_UNTIL - Math.max(0, zoomOffset);
+  return [
+    { id: 'sheet', type: 'background', paint: { 'background-color': palette.sheet } },
     {
-      id: 'water-edge',
-      type: 'line',
-      source: SOURCE_ID,
-      'source-layer': 'water',
-      filter: OPEN_WATER,
-      layout: { 'line-join': 'round' },
-      paint: { 'line-color': waterEdge, 'line-width': 0.6 },
+      ...tint('built-up', 'landuse', classIs(...BUILT_UP), away.builtUp),
+      maxzoom: builtUpUntil,
+      paint: {
+        'fill-color': away.builtUp,
+        // Whole-layer opacity: the plots overlap, and per-feature opacity would print the overlaps twice.
+        'fill-layer-opacity': linearByZoom([[builtUpUntil - 1, 1], [builtUpUntil, 0]]),
+      },
     },
+    tint('woods', 'landcover', classIs('wood'), away.green),
+    tint('parks', 'landcover', ['all', classIs('grass'), PARKLAND], away.green),
+    ...waterLayers(palette),
   ];
 }
 
@@ -123,7 +158,11 @@ function railLayer(palette: Palette): LineLayerSpecification {
   };
 }
 
-export function awayLayers(palette: Palette, theme: Theme): LayerSpecification[] {
+/**
+ * The Away style. With the ground (`withGround`, the default) it is the sheet underneath; without it,
+ * it keeps only the edge of its water, as a line, and has no paper, so the sheet below shows through.
+ */
+export function awayLayers(palette: Palette, theme: Theme, withGround = true): LayerSpecification[] {
   const { away } = palette;
   const classColor = (cls: RoadClass): ExpressionSpecification => [
     'case',
@@ -143,19 +182,7 @@ export function awayLayers(palette: Palette, theme: Theme): LayerSpecification[]
     away.road.tertiary,
   ];
   return [
-    { id: 'sheet', type: 'background', paint: { 'background-color': palette.sheet } },
-    {
-      ...tint('built-up', 'landuse', classIs(...BUILT_UP), away.builtUp),
-      maxzoom: BUILT_UP_UNTIL,
-      paint: {
-        'fill-color': away.builtUp,
-        // Whole-layer opacity: the plots overlap, and per-feature opacity would print the overlaps twice.
-        'fill-layer-opacity': linearByZoom([[BUILT_UP_UNTIL - 1, 1], [BUILT_UP_UNTIL, 0]]),
-      },
-    },
-    tint('woods', 'landcover', classIs('wood'), away.green),
-    tint('parks', 'landcover', ['all', classIs('grass'), PARKLAND], away.green),
-    ...waterLayers(palette),
+    ...(withGround ? groundLayers(palette) : [waterEdgeLayer(palette)]),
     railLayer(palette),
     ...roadLayers(AWAY_ROAD_WEIGHTS, (kind) => (kind === 'ramp' ? rampColor : classColor(kind))),
     ...streetNameLayers({ text: away.lettering, halo: palette.sheet }),

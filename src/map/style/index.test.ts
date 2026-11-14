@@ -33,7 +33,20 @@ const HOME_STYLES: Case[] = THEMES.flatMap((theme) =>
     style: createStyles(theme).overlay(offset),
   })),
 );
-const ALL_STYLES = [...AWAY_STYLES, ...HOME_STYLES];
+/** The same pair with the ground handed to Home: Away becomes line-work, Home the sheet underneath. */
+const AWAY_LINE_STYLES: Case[] = THEMES.map((theme) => ({
+  label: `away without the ground, ${theme}`,
+  theme,
+  style: createStyles(theme, 'home').base,
+}));
+const HOME_GROUND_STYLES: Case[] = THEMES.flatMap((theme) =>
+  ZOOM_OFFSETS.map((offset) => ({
+    label: `home with the ground, ${theme}, offset ${offset}`,
+    theme,
+    style: createStyles(theme, 'home').overlay(offset),
+  })),
+);
+const ALL_STYLES = [...AWAY_STYLES, ...HOME_STYLES, ...AWAY_LINE_STYLES, ...HOME_GROUND_STYLES];
 
 function layer(style: StyleSpecification, id: string): LayerSpecification {
   const found = style.layers.find((candidate) => candidate.id === id);
@@ -152,6 +165,57 @@ describe.each(HOME_STYLES)('$label', ({ style, theme }) => {
     const roads = style.layers.map((candidate) => candidate.id).filter((id) => id.startsWith('road-'));
     expect(roads[roads.length - 1]).toBe('road-motorway');
     expect(roads[0]).toBe('road-minor');
+  });
+});
+
+describe('the ground', () => {
+  it('is on Away unless Home is given it', () => {
+    expect(createStyles('light').ground).toBe('away');
+    expect(createStyles('light', 'home').ground).toBe('home');
+  });
+
+  it('never tints built-up land from tiles that carry only scattered plots of it', () => {
+    const builtUp = (offset: number) => layer(createStyles('light', 'home').overlay(offset), 'built-up');
+    // Home above Away: its tiles turn patchy at its own zoom 14, before Away gets to 14.
+    expect(builtUp(1.2).maxzoom).toBe(14);
+    expect(paintExpression(builtUp(1.2), 'fill-layer-opacity').slice(-4)).toEqual([13, 1, 14, 0]);
+    // Home below Away: the tint bows out with Away's, at Away zoom 14.
+    expect(builtUp(-1.2).maxzoom).toBe(12.8);
+    expect(layer(createStyles('light').base, 'built-up').maxzoom).toBe(14);
+  });
+});
+
+describe.each(AWAY_LINE_STYLES)('$label', ({ style }) => {
+  it('has no paper and no fills, so Home shows through', () => {
+    const types = style.layers.map((candidate) => candidate.type);
+    expect(types).not.toContain('background');
+    expect(types).not.toContain('fill');
+  });
+
+  it('keeps the edge of its water as a line, and its roads and rail', () => {
+    expect(layer(style, 'water-edge').type).toBe('line');
+    expect(layer(style, 'rail').type).toBe('line');
+    expect(layer(style, 'road-motorway').type).toBe('line');
+  });
+});
+
+describe.each(HOME_GROUND_STYLES)('$label', ({ style, theme }) => {
+  it('starts with the sheet and prints the tints of land and water before its own lines', () => {
+    expect(style.layers[0]).toMatchObject({ id: 'sheet', type: 'background', paint: { 'background-color': INKS[theme].sheet } });
+    const ids = style.layers.map((candidate) => candidate.id);
+    for (const id of ['built-up', 'woods', 'parks', 'water']) {
+      expect(layer(style, id).type, id).toBe('fill');
+      expect(ids.indexOf(id), id).toBeLessThan(ids.indexOf('shoreline'));
+      expect(ids.indexOf(id), id).toBeLessThan(ids.indexOf('road-minor'));
+    }
+  });
+
+  it('drops the wash on the sea, which the water tint already covers', () => {
+    expect(style.layers.map((candidate) => candidate.id)).not.toContain('sea-tint');
+  });
+
+  it('still prints its roads in the Home ink', () => {
+    expect(layer(style, 'road-motorway').paint?.['line-color' as never]).toBe(INKS[theme].home);
   });
 });
 

@@ -53,6 +53,8 @@ export function runCommand(command: KeyCommand, targets: CommandTargets): void {
       return targets.pinAddress.openMenu('collar');
     case 'toggleUnits':
       return controller.toggleUnits();
+    case 'toggleGround':
+      return controller.toggleGround();
     case 'copyLink':
       return targets.copyLink();
     case 'pickHome':

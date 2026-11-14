@@ -65,14 +65,18 @@ export function icon(name: IconName, className = ''): SVGSVGElement {
 }
 
 /**
- * The legend's ink swatches: a piece of each map as it is printed. Home is heavy warm line-work on
- * the bare sheet; Away is light cool line-work over its flat tints.
+ * The legend's ink swatches: a piece of each map as it is printed. Home is heavy warm line-work;
+ * Away is light cool line-work. The flat tints of land and water are on whichever place has the
+ * ground (collar.css hides the other place's by the root's `data-ground`).
  */
+const groundTints = (): Shape[] => [
+  ['rect', { class: 'swatch__land', width: '44', height: '22' }],
+  path('M0 15c10-6 22 5 44-3v10H0z', 'swatch__water'),
+];
 const SWATCHES = {
-  home: [path('M0 16C14 16 18 5 44 5', 'swatch__home-major'), path('M8 0l12 22M30 0v22', 'swatch__home-minor')],
+  home: [...groundTints(), path('M0 16C14 16 18 5 44 5', 'swatch__home-major'), path('M8 0l12 22M30 0v22', 'swatch__home-minor')],
   away: [
-    ['rect', { class: 'swatch__away-land', width: '44', height: '22' }],
-    path('M0 15c10-6 22 5 44-3v10H0z', 'swatch__away-water'),
+    ...groundTints(),
     path('M0 7c16-3 26 3 44-1', 'swatch__away-major'),
     path('M14 0l4 22M34 0l-4 22', 'swatch__away-minor'),
   ],

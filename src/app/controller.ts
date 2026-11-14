@@ -119,6 +119,9 @@ export interface Controller {
   setUnits(units: Units): void;
   toggleUnits(): void;
   setThemeChoice(choice: ThemeChoice): void;
+  /** Shade in the land and water of Home or of Away; the other place is drawn as streets only. */
+  setGround(ground: Sheet): void;
+  toggleGround(): void;
   /** Turn the single-letter keyboard shortcuts on or off. */
   setShortcutsOn(on: boolean): void;
   /** The one-time hint about sliding Home is no longer needed. */
@@ -173,9 +176,10 @@ export function createController(deps: ControllerDeps): Controller {
       dual.setDrawing('away', drawings.away);
     }),
     store.select((s) => s.homeHidden, (hidden) => dual.setHomeHidden(hidden)),
-    store.select((s) => s.theme, (theme) => {
-      deps.applyTheme(theme);
-      dual.setStyles(deps.styles(theme));
+    store.subscribe((state, previous) => {
+      if (state.theme === previous.theme && state.ground === previous.ground) return;
+      if (state.theme !== previous.theme) deps.applyTheme(state.theme);
+      dual.setStyles(deps.styles(state.theme, state.ground));
     }),
     deps.systemTheme.onChange(() => {
       store.set((s) => ({ theme: resolveTheme(s.themeChoice, deps.systemTheme.prefersDark()) }));
@@ -191,6 +195,7 @@ export function createController(deps: ControllerDeps): Controller {
       if (
         s.units === previous.units &&
         s.themeChoice === previous.themeChoice &&
+        s.ground === previous.ground &&
         s.shortcutsOn === previous.shortcutsOn &&
         s.slideHintDone === previous.slideHintDone
       ) {
@@ -199,6 +204,7 @@ export function createController(deps: ControllerDeps): Controller {
       (deps.savePrefs ?? savePrefs)({
         units: s.units,
         themeChoice: s.themeChoice,
+        ground: s.ground,
         shortcutsOn: s.shortcutsOn,
         slideHintDone: s.slideHintDone,
       });
@@ -495,6 +501,14 @@ export function createController(deps: ControllerDeps): Controller {
 
     setThemeChoice(choice) {
       store.set({ themeChoice: choice, theme: resolveTheme(choice, deps.systemTheme.prefersDark()) });
+    },
+
+    setGround(ground) {
+      store.set({ ground });
+    },
+
+    toggleGround() {
+      controller.setGround(store.get().ground === 'away' ? 'home' : 'away');
     },
 
     setShortcutsOn(on) {

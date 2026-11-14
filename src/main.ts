@@ -70,10 +70,17 @@ function start(root: HTMLElement): void {
     units: prefs.units,
     themeChoice: prefs.themeChoice,
     theme,
+    ground: prefs.ground,
     shortcutsOn: prefs.shortcutsOn,
     slideHintDone: prefs.slideHintDone,
   });
   const first = store.get();
+  // Wherever a swatch of a map's ink is drawn, the tints of land and water go with the place that has the ground.
+  const markGround = (ground: AppState['ground']): void => {
+    document.documentElement.dataset.ground = ground;
+  };
+  store.select((s) => s.ground, markGround);
+  markGround(first.ground);
 
   // --- the page around the maps: stage, margin, dialogs, More menu ---
 
@@ -142,7 +149,7 @@ function start(root: HTMLElement): void {
         center: first.reg.baseAnchor,
         zoom: stage.element.clientWidth < NARROW_STAGE_PX ? FRAMING_ZOOM.narrow : FRAMING_ZOOM.wide,
       },
-      styles: createStyles(theme),
+      styles: createStyles(theme, prefs.ground),
     });
   } catch (error) {
     if (!(error instanceof MapUnavailableError)) throw error;

@@ -161,6 +161,8 @@ export interface AppState extends LinkState {
   readonly themeChoice: ThemeChoice;
   /** The theme actually in effect (themeChoice resolved against the system setting). */
   readonly theme: Theme;
+  /** The place whose land and water are shaded in (and which lies underneath); the other is drawn as streets only. */
+  readonly ground: Sheet;
   /** Whether single-letter keyboard shortcuts (S, M, X ...) are listened for. */
   readonly shortcutsOn: boolean;
   /** The one-time hint about sliding Home has been seen or made redundant. */

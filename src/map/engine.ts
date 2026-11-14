@@ -169,6 +169,11 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   let styles = options.styles;
+  /** The sheet with the ground lies underneath: Away by default, Home when it has the ground (engine.css). */
+  const stackFor = (ground: Sheet): void => {
+    stage.classList.toggle('wwiwiwh-stage--home-ground', ground === 'home');
+  };
+  stackFor(styles.ground);
   let registration = options.registration;
   /** The zoom offset the current Home style was built for. */
   let homeStyleOffset = zoomOffset(registration);
@@ -678,6 +683,7 @@ export const createDualMap: CreateDualMap = (options: DualMapOptions): DualMap =
     },
     setStyles(next) {
       styles = next;
+      stackFor(styles.ground);
       homeStyleOffset = zoomOffset(registration);
       applyStyle('away', styles.base);
       applyStyle('home', styles.overlay(homeStyleOffset));

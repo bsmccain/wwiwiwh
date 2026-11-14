@@ -2,6 +2,7 @@ import type { ExpressionSpecification, LayerSpecification, LineLayerSpecificatio
 import type { Theme } from '../../app/types';
 import { SOURCE_ID } from '../contracts';
 import { NOT_INTERMITTENT, NOT_TUNNEL, classIs, fadeIn, linearByZoom, widthByZoom } from './expressions';
+import { groundLayers } from './away';
 import { routeImageId } from './images';
 import { routeNumberLayer, streetNameLayers } from './lettering';
 import type { Palette } from './palette';
@@ -11,6 +12,9 @@ import { shiftLayerZoom } from './zoom';
 /*
  * Home is overprinted on Away in one warm ink, as line-work only: no ground, no land fills. Its one
  * area mark is the sea, because a coastline is the shape a native knows best.
+ *
+ * Unless Home has the ground: then it is the sheet underneath, printing the paper and the flat tints
+ * of land and water (see `groundLayers`), with its line-work on them and Away's over it all.
  *
  * Every zoom below is an AWAY zoom. The Home map runs `zoomOffset` levels above Away, so the finished
  * layers are shifted by that much at the end and the two sheets thicken and thin together.
@@ -43,7 +47,14 @@ function waterLining(id: string, ink: string, pixels: number, width: number, opa
  * each tile, so those cuts would be drawn too if an offset line reached back inside the tile: the
  * outer line must stay nearer than 8 px.
  */
-function seaLayers(ink: string): LayerSpecification[] {
+function seaLayers(ink: string, withGround: boolean): LayerSpecification[] {
+  const lining = [
+    waterLining('sea-lining-far', ink, 7, 0.6, 0.3),
+    waterLining('sea-lining-near', ink, 3.5, 0.7, 0.55),
+    seaLine('shoreline', { 'line-color': ink, 'line-width': widthByZoom([[12, 1.4], [16, 2.4]]) }),
+  ];
+  // On the ground the sea is already tinted as water; a wash of Home ink over it would only muddy it.
+  if (withGround) return lining;
   return [
     {
       id: 'sea-tint',
@@ -54,9 +65,7 @@ function seaLayers(ink: string): LayerSpecification[] {
       // An antialiased fill gets an outline pass, which would lay a second coat of this tint along every edge.
       paint: { 'fill-color': ink, 'fill-opacity': 0.07, 'fill-antialias': false },
     },
-    waterLining('sea-lining-far', ink, 7, 0.6, 0.3),
-    waterLining('sea-lining-near', ink, 3.5, 0.7, 0.55),
-    seaLine('shoreline', { 'line-color': ink, 'line-width': widthByZoom([[12, 1.4], [16, 2.4]]) }),
+    ...lining,
   ];
 }
 
@@ -86,10 +95,11 @@ function waitForData(weights: RoadWeights, zoomOffset: number): RoadWeights {
   return waiting;
 }
 
-export function homeLayers(palette: Palette, theme: Theme, zoomOffset: number): LayerSpecification[] {
+export function homeLayers(palette: Palette, theme: Theme, zoomOffset: number, withGround = false): LayerSpecification[] {
   const { ink } = palette.home;
   const layers: LayerSpecification[] = [
-    ...seaLayers(ink),
+    ...(withGround ? groundLayers(palette, zoomOffset) : []),
+    ...seaLayers(ink, withGround),
     freshWaterLayer(ink),
     // Every road at full strength, tunnels included: to a native the freeway is one line whether or not it dives.
     ...roadLayers(waitForData(HOME_ROAD_WEIGHTS, zoomOffset), () => ink),

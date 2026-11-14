@@ -146,12 +146,18 @@
   stroke-width: 1;
 }
 
-.swatch__away-land {
+.swatch__land {
   fill: color-mix(in srgb, var(--away) 9%, var(--sheet));
 }
 
-.swatch__away-water {
+.swatch__water {
   fill: color-mix(in srgb, var(--away) 26%, var(--sheet));
+}
+
+/* The tints of land and water belong to the place that has the ground (main.ts keeps `data-ground` on the root). */
+:root:not([data-ground='home']) .swatch--home :is(.swatch__land, .swatch__water),
+:root[data-ground='home'] .swatch--away :is(.swatch__land, .swatch__water) {
+  display: none;
 }
 
 .swatch__away-major {
