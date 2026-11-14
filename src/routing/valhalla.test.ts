@@ -16,6 +16,10 @@ import {
   fetchReach,
   fetchRoute,
   isBeyondReach,
+  MAX_ANSWER_BYTES,
+  MAX_REACH_POINTS,
+  MAX_ROUTE_LEGS,
+  MAX_ROUTE_POINTS,
   parseReach,
   parseRoute,
   reachesNowhere,
@@ -128,6 +132,30 @@ describe('parseRoute', () => {
   it('refuses an answer that is not in the kilometres that were asked for', () => {
     expect(parseRoute({ trip: { ...paloAltoToSanJose.body.trip, units: 'miles' } })).toBeNull();
   });
+
+  /** A route of `points` points, all at the same spot: two characters each. */
+  const standingStill = (legs: readonly number[]): unknown => ({
+    trip: { summary: { length: 1, time: 1 }, units: 'kilometers', legs: legs.map((points) => ({ shape: '??'.repeat(points) })) },
+  });
+
+  it('refuses a route of more points than any real drive has, without failing', () => {
+    // The probe from the security audit: 200,000 points in one leg once threw a RangeError.
+    expect(() => parseRoute(standingStill([200_000]))).not.toThrow();
+    expect(parseRoute(standingStill([200_000]))).toBeNull();
+    expect(parseRoute(standingStill([MAX_ROUTE_POINTS + 1]))).toBeNull();
+    expect(parseRoute(standingStill([MAX_ROUTE_POINTS]))?.line).toHaveLength(MAX_ROUTE_POINTS);
+  });
+
+  it('counts the points of every leg together, less the ones they share', () => {
+    const half = MAX_ROUTE_POINTS / 2;
+    expect(parseRoute(standingStill([half, half + 1]))?.line).toHaveLength(MAX_ROUTE_POINTS);
+    expect(parseRoute(standingStill([half, half + 2]))).toBeNull();
+  });
+
+  it('refuses a route of more legs than a drive between two spots has', () => {
+    expect(parseRoute(standingStill(Array.from({ length: MAX_ROUTE_LEGS }, () => 2)))).not.toBeNull();
+    expect(parseRoute(standingStill(Array.from({ length: MAX_ROUTE_LEGS + 1 }, () => 2)))).toBeNull();
+  });
 });
 
 describe('parseReach', () => {
@@ -172,6 +200,30 @@ describe('parseReach', () => {
     expect(parseReach(polygon([[...ring, [0, 91]]]))).toBeNull();
     expect(parseReach(polygon([[...ring, ['0', 0]]]))).toBeNull();
     expect(parseReach(polygon([ring]))).not.toBeNull();
+  });
+
+  /** A closed ring of `corners` corners about the spot 0, 0. */
+  const ringOf = (corners: number): number[][] =>
+    Array.from({ length: corners }, (_, at) => {
+      const angle = (2 * Math.PI * (at % (corners - 1))) / (corners - 1);
+      return [Math.cos(angle) / 100, Math.sin(angle) / 100];
+    });
+  const contour = (...rings: number[][][]): unknown => ({ features: [{ geometry: { type: 'Polygon', coordinates: rings } }] });
+
+  it('refuses a contour of more corners than any real reach has', () => {
+    // The probe from the security audit: one ring of 200,000 corners was accepted.
+    expect(parseReach(contour(ringOf(200_000)))).toBeNull();
+    expect(parseReach(contour(ringOf(MAX_REACH_POINTS + 1)))).toBeNull();
+    expect(parseReach(contour(ringOf(MAX_REACH_POINTS)))?.[0]?.[0]).toHaveLength(MAX_REACH_POINTS);
+  });
+
+  it('counts the corners of every ring, polygon and feature together', () => {
+    const half = ringOf(MAX_REACH_POINTS / 2);
+    expect(parseReach(contour(half, half))).not.toBeNull();
+    expect(parseReach(contour(half, half, ringOf(4)))).toBeNull();
+    const feature = { geometry: { type: 'MultiPolygon', coordinates: [[half]] } };
+    expect(parseReach({ features: [feature, feature] })).not.toBeNull();
+    expect(parseReach({ features: [feature, feature, feature] })).toBeNull();
   });
 });
 
@@ -288,6 +340,34 @@ describe('asking the server', () => {
       vi.stubGlobal('fetch', fetchMock);
       await expect(fetchRoute(PALO_ALTO, SAN_JOSE, AbortSignal.abort())).rejects.toMatchObject({ name: 'AbortError' });
       expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects an answer far longer than any real route while it arrives, with or without its length', async () => {
+      const kilobyte = new TextEncoder().encode(' '.repeat(1024));
+      let sent = 0;
+      const endless = (): Response =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            pull(controller) {
+              sent += kilobyte.byteLength;
+              controller.enqueue(kilobyte);
+            },
+          }),
+          { status: 200 },
+        );
+      vi.stubGlobal('fetch', vi.fn(async () => endless()));
+      await expect(fetchRoute(PALO_ALTO, SAN_JOSE, never)).rejects.toMatchObject({ name: 'RoutingUnavailableError', reason: 'bad-response' });
+      // It stopped soon after the limit instead of reading on for ever.
+      expect(sent).toBeLessThan(MAX_ANSWER_BYTES + 64 * 1024);
+      const declared = new Response('{}', { status: 200, headers: { 'content-length': String(MAX_ANSWER_BYTES + 1) } });
+      vi.stubGlobal('fetch', vi.fn(async () => declared));
+      await expect(fetchRoute(PALO_ALTO, SAN_JOSE, never)).rejects.toMatchObject({ reason: 'bad-response' });
+    });
+
+    it('rejects the audit’s route of 200,000 points as a bad answer', async () => {
+      const body = { trip: { summary: { length: 1, time: 1 }, units: 'kilometers', legs: [{ shape: '??'.repeat(200_000) }] } };
+      vi.stubGlobal('fetch', vi.fn(async () => answer({ status: 200, body })));
+      await expect(fetchRoute(PALO_ALTO, SAN_JOSE, never)).rejects.toMatchObject({ name: 'RoutingUnavailableError', reason: 'bad-response' });
     });
   });
 

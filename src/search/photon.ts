@@ -1,6 +1,7 @@
 import type { Place } from '../app/types';
 import { distanceMeters } from '../geo/distance';
 import type { LngLat } from '../geo/types';
+import { readJsonWithin } from '../net/read-json';
 import { SAME_PLACE_METERS } from './place';
 import { cleanQuery, fold } from './text';
 
@@ -31,6 +32,15 @@ export const SEARCH_TIMEOUT_MS = 8000;
 /** Ask for more than is shown: duplicates and junk kinds take up to six of fifteen rows. */
 export const FETCH_LIMIT = 15;
 export const MAX_RESULTS = 6;
+/**
+ * An answer with more features than this is not an answer to the question asked: the server keeps to
+ * `limit`. The room above it is for a server that rounds up, not for one that ignores the limit.
+ */
+export const MAX_FEATURES = FETCH_LIMIT * 2;
+/** A real answer of fifteen features is a few kilobytes; one longer than this is refused while it arrives. */
+export const MAX_ANSWER_BYTES = 256 * 1024;
+/** OpenStreetMap caps a tag's value at 255 characters, which is up to 510 UTF-16 code units. */
+export const MAX_TEXT_LENGTH = 510;
 
 /** The parameter order is fixed so that a repeated query is answered by the browser's HTTP cache (the server allows an hour). */
 export function buildSearchUrl(query: string): string {
@@ -336,7 +346,10 @@ function isFeature(value: unknown): value is PhotonFeature {
   const { properties, geometry } = value;
   if (!isRecord(properties) || !isRecord(geometry)) return false;
   const coordinates = geometry['coordinates'];
-  const isText = (key: string): boolean => typeof properties[key] === 'string';
+  const isText = (key: string): boolean => {
+    const text = properties[key];
+    return typeof text === 'string' && text.length <= MAX_TEXT_LENGTH;
+  };
   const isTextOrAbsent = (key: string): boolean => properties[key] === undefined || isText(key);
   const osmId = properties['osm_id'];
   return (
@@ -365,7 +378,8 @@ async function fetchJson(url: string, signal: AbortSignal): Promise<unknown> {
       if (response.status === 400) console.warn(`Photon rejected the search request: ${url}`);
       throw new SearchUnavailableError('http', response.status);
     }
-    return await response.json().catch(() => {
+    return await readJsonWithin(response, MAX_ANSWER_BYTES).catch(() => {
+      // Too long, not JSON, or cut off; an abort or a timeout is told apart below.
       throw new SearchUnavailableError('bad-response');
     });
   } catch (error) {
@@ -382,12 +396,14 @@ async function fetchJson(url: string, signal: AbortSignal): Promise<unknown> {
 
 /**
  * Fetches one answer from Photon and returns its well-formed features. Rejects with
- * `SearchUnavailableError` when Photon cannot be reached, answers with an error or stays silent for
- * eight seconds, and with the signal's own abort reason when the caller aborts.
+ * `SearchUnavailableError` when Photon cannot be reached, answers with an error, stays silent for
+ * eight seconds or answers with far more than was asked for, and with the signal's own abort reason
+ * when the caller aborts.
  */
 export async function fetchFeatures(url: string, signal: AbortSignal): Promise<PhotonFeature[]> {
   const body = await fetchJson(url, signal);
   if (!isRecord(body) || !Array.isArray(body['features'])) throw new SearchUnavailableError('bad-response');
+  if (body['features'].length > MAX_FEATURES) throw new SearchUnavailableError('bad-response');
   return body['features'].filter(isFeature);
 }
 
