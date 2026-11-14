@@ -1,7 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { presetPlace } from '../app/defaults';
 import type { Place } from '../app/types';
-import { MAX_RECENT, recentPlaces, recentPlacesIn, rememberPlace, rememberPlaceIn, type RecentStorage } from './recent';
+import {
+  clearRecent,
+  clearRecentIn,
+  keepsRecent,
+  keepsRecentIn,
+  MAX_RECENT,
+  recentPlaces,
+  recentPlacesIn,
+  rememberPlace,
+  rememberPlaceIn,
+  type RecentStorage,
+  setKeepsRecent,
+  setKeepsRecentIn,
+} from './recent';
+import { recentSpotsIn, rememberSpotIn } from './recent-spots';
 
 class FakeStorage implements RecentStorage {
   readonly items = new Map<string, string>();
@@ -11,6 +25,9 @@ class FakeStorage implements RecentStorage {
   setItem(key: string, value: string): void {
     this.items.set(key, value);
   }
+  removeItem(key: string): void {
+    this.items.delete(key);
+  }
 }
 
 const brokenStorage: RecentStorage = {
@@ -19,6 +36,9 @@ const brokenStorage: RecentStorage = {
   },
   setItem() {
     throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+  },
+  removeItem() {
+    throw new DOMException('The operation is insecure.', 'SecurityError');
   },
 };
 
@@ -148,5 +168,94 @@ describe('recentPlaces and rememberPlace', () => {
     } finally {
       Reflect.deleteProperty(globalThis, 'localStorage');
     }
+  });
+});
+
+describe('clearing and not keeping what was picked', () => {
+  const downingStreet = { name: '10 Downing Street', context: 'London', position: { lat: 51.50349, lng: -0.1277 } };
+  /** Settings saved by prefs.ts, which clearing must leave alone. */
+  const PREFS = ['wwiwiwh:prefs:v1', '{"units":"km","themeChoice":"dark"}'] as const;
+
+  const withHistory = (): FakeStorage => {
+    const storage = new FakeStorage();
+    storage.setItem(...PREFS);
+    rememberPlaceIn(storage, paloAlto);
+    rememberSpotIn(storage, downingStreet);
+    expect(recentPlacesIn(storage)).toEqual([paloAlto]);
+    expect(recentSpotsIn(storage)).toEqual([downingStreet]);
+    return storage;
+  };
+
+  it('keeps them until told otherwise', () => {
+    expect(keepsRecentIn(new FakeStorage())).toBe(true);
+  });
+
+  it('clears both the places and the spots, and nothing else', () => {
+    const storage = withHistory();
+    clearRecentIn(storage);
+    expect([...storage.items.keys()]).toEqual([PREFS[0]]);
+    expect(storage.getItem(PREFS[0])).toBe(PREFS[1]);
+    expect(recentPlacesIn(storage)).toEqual([]);
+    expect(recentSpotsIn(storage)).toEqual([]);
+    // Clearing is not switching off: the next pick is kept again.
+    expect(keepsRecentIn(storage)).toBe(true);
+    rememberPlaceIn(storage, tokyo);
+    expect(recentPlacesIn(storage)).toEqual([tokyo]);
+  });
+
+  it('switched off, clears what was kept and keeps no new picks', () => {
+    const storage = withHistory();
+    setKeepsRecentIn(storage, false);
+    expect(keepsRecentIn(storage)).toBe(false);
+    expect(storage.getItem('wwiwiwh.recent-places')).toBeNull();
+    expect(storage.getItem('wwiwiwh.recent-spots')).toBeNull();
+    rememberPlaceIn(storage, tokyo);
+    rememberSpotIn(storage, downingStreet);
+    expect(storage.getItem('wwiwiwh.recent-places')).toBeNull();
+    expect(storage.getItem('wwiwiwh.recent-spots')).toBeNull();
+    expect(storage.getItem(PREFS[0])).toBe(PREFS[1]);
+  });
+
+  it('switched off, lists nothing even if a list was written some other way', () => {
+    const storage = new FakeStorage();
+    setKeepsRecentIn(storage, false);
+    storage.setItem('wwiwiwh.recent-places', JSON.stringify([{ name: 'Palo Alto', context: '', lat: 37.4, lng: -122.1 }]));
+    storage.setItem('wwiwiwh.recent-spots', JSON.stringify([{ name: 'Somewhere', context: '', lat: 51.5, lng: -0.1 }]));
+    expect(recentPlacesIn(storage)).toEqual([]);
+    expect(recentSpotsIn(storage)).toEqual([]);
+  });
+
+  it('switched back on, keeps picks again', () => {
+    const storage = new FakeStorage();
+    setKeepsRecentIn(storage, false);
+    setKeepsRecentIn(storage, true);
+    expect(keepsRecentIn(storage)).toBe(true);
+    rememberPlaceIn(storage, tokyo);
+    expect(recentPlacesIn(storage)).toEqual([tokyo]);
+  });
+
+  it('never throws when storage is missing or refuses to work', () => {
+    for (const storage of [null, brokenStorage]) {
+      expect(keepsRecentIn(storage)).toBe(false);
+      expect(() => clearRecentIn(storage)).not.toThrow();
+      expect(() => setKeepsRecentIn(storage, false)).not.toThrow();
+      expect(() => setKeepsRecentIn(storage, true)).not.toThrow();
+    }
+  });
+
+  describe('in the browser', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('use the browser’s localStorage', () => {
+      const storage = new FakeStorage();
+      vi.stubGlobal('localStorage', storage);
+      rememberPlace(london);
+      clearRecent();
+      expect(recentPlaces()).toEqual([]);
+      setKeepsRecent(false);
+      expect(keepsRecent()).toBe(false);
+      rememberPlace(london);
+      expect(storage.getItem('wwiwiwh.recent-places')).toBeNull();
+    });
   });
 });

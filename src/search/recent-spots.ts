@@ -1,10 +1,10 @@
 import { distanceMeters } from '../geo/distance';
 import type { LngLat } from '../geo/types';
-import { browserStorage, type RecentStorage, storedPosition } from './recent';
+import { browserStorage, keepsRecentIn, type RecentStorage, SPOTS_STORAGE_KEY, storedPosition } from './recent';
 import { SURROUNDINGS_METERS } from './spots';
 import { fold } from './text';
 
-const STORAGE_KEY = 'wwiwiwh.recent-spots';
+const STORAGE_KEY = SPOTS_STORAGE_KEY;
 export const MAX_REMEMBERED_SPOTS = 12;
 /** A spot of the same name this close repeats one already remembered: one address found twice, a few doors apart at most. */
 const REPEAT_WITHIN_METERS = 50;
@@ -46,7 +46,7 @@ function withoutRepeats(spots: readonly RememberedSpot[]): RememberedSpot[] {
 
 /** Newest first. Unreadable or missing storage reads as "nothing yet". */
 export function recentSpotsIn(storage: RecentStorage | null): RememberedSpot[] {
-  if (!storage) return [];
+  if (!storage || !keepsRecentIn(storage)) return [];
   try {
     const stored: unknown = JSON.parse(storage.getItem(STORAGE_KEY) ?? '[]');
     if (!Array.isArray(stored)) return [];
@@ -57,7 +57,7 @@ export function recentSpotsIn(storage: RecentStorage | null): RememberedSpot[] {
 }
 
 export function rememberSpotIn(storage: RecentStorage | null, spot: RememberedSpot): void {
-  if (!storage) return;
+  if (!storage || !keepsRecentIn(storage)) return;
   const earlier = recentSpotsIn(storage).filter((other) => !isSameSpot(other, spot));
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify([spot, ...earlier].slice(0, MAX_REMEMBERED_SPOTS).map(toStored)));

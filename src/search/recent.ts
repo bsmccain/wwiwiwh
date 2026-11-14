@@ -5,12 +5,56 @@ import { MAX_LATITUDE } from './photon';
 import { samePlace } from './place';
 
 const STORAGE_KEY = 'wwiwiwh.recent-places';
+/** Where recent-spots.ts keeps the spots picked before; named here so that clearing reaches both lists. */
+export const SPOTS_STORAGE_KEY = 'wwiwiwh.recent-spots';
+/** "off" when the person has asked for no places or spots to be kept. Kept apart from the display settings. */
+const KEEP_KEY = 'wwiwiwh.keep-recent';
 export const MAX_RECENT = 6;
 
 /** The part of Web Storage this module uses, so tests can hand in a fake. */
 export interface RecentStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+/*
+ * The places and spots picked before are kept on this device, so a shared browser shows them to the
+ * next person. They can be cleared, and keeping them can be switched off, which clears them as well.
+ */
+
+/** Whether picked places and spots are kept. They are unless the person switched it off. */
+export function keepsRecentIn(storage: Pick<RecentStorage, 'getItem'> | null): boolean {
+  if (!storage) return false;
+  try {
+    return storage.getItem(KEEP_KEY) !== 'off';
+  } catch {
+    return false;
+  }
+}
+
+/** Forgets every place and spot picked before. The display settings are kept elsewhere and stay. */
+export function clearRecentIn(storage: RecentStorage | null): void {
+  if (!storage) return;
+  for (const key of [STORAGE_KEY, SPOTS_STORAGE_KEY]) {
+    try {
+      storage.removeItem(key);
+    } catch {
+      // Blocked storage keeps nothing to clear.
+    }
+  }
+}
+
+/** Switching it off clears what was kept, so that "off" never leaves a list behind it. */
+export function setKeepsRecentIn(storage: RecentStorage | null, keep: boolean): void {
+  if (!storage) return;
+  try {
+    if (keep) storage.removeItem(KEEP_KEY);
+    else storage.setItem(KEEP_KEY, 'off');
+  } catch {
+    // Blocked storage keeps nothing either way.
+  }
+  if (!keep) clearRecentIn(storage);
 }
 
 interface StoredPlace {
@@ -51,7 +95,7 @@ function withoutRepeats(places: readonly Place[]): Place[] {
 
 /** Newest first. Unreadable or missing storage reads as "nothing yet". */
 export function recentPlacesIn(storage: RecentStorage | null): Place[] {
-  if (!storage) return [];
+  if (!storage || !keepsRecentIn(storage)) return [];
   try {
     const stored: unknown = JSON.parse(storage.getItem(STORAGE_KEY) ?? '[]');
     if (!Array.isArray(stored)) return [];
@@ -62,7 +106,7 @@ export function recentPlacesIn(storage: RecentStorage | null): Place[] {
 }
 
 export function rememberPlaceIn(storage: RecentStorage | null, place: Place): void {
-  if (!storage) return;
+  if (!storage || !keepsRecentIn(storage)) return;
   const earlier = recentPlacesIn(storage).filter((other) => !samePlace(other, place));
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify([place, ...earlier].slice(0, MAX_RECENT).map(toStored)));
@@ -86,4 +130,16 @@ export function recentPlaces(): Place[] {
 
 export function rememberPlace(place: Place): void {
   rememberPlaceIn(browserStorage(), place);
+}
+
+export function keepsRecent(): boolean {
+  return keepsRecentIn(browserStorage());
+}
+
+export function setKeepsRecent(keep: boolean): void {
+  setKeepsRecentIn(browserStorage(), keep);
+}
+
+export function clearRecent(): void {
+  clearRecentIn(browserStorage());
 }

@@ -116,6 +116,9 @@ export function createAboutDialog(deps: { overlays: Overlays }): SheetDialog {
       paragraph('about__lead', [
         "Addresses you search for are sent to Photon to be looked up, and the two ends of a drive, with the spot its start lands on in the other place, are sent to the routing server. A link you copy carries the pin's position, any drive, and any names you gave their spots.",
       ]),
+      paragraph('about__lead', [
+        "The places and spots you pick, with their exact positions, are kept in this browser so the pickers can offer them again, and anyone using this browser can see them. Under More, Recent places and spots clears them or stops keeping them. That cannot take back a link already shared, or clear the browser's own history.",
+      ]),
       el('h3', 'about__heading', {}, ['Credits and licences']),
       el('ul', 'about__credits', {}, [
         credit([
