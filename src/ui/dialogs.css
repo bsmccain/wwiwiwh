@@ -173,6 +173,34 @@
 
 /* --- about --- */
 
+/* The app's icon, in the printing for the theme. Its square is opaque, so it is shown as a tile. */
+.about__logo {
+  display: block;
+  inline-size: 64px;
+  block-size: 64px;
+  margin-block-end: var(--space-3);
+  border-radius: 14px;
+}
+
+.about__logo--dark,
+:root[data-theme='dark'] .about__logo--light {
+  display: none;
+}
+
+:root[data-theme='dark'] .about__logo--dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .about__logo--light {
+    display: none;
+  }
+
+  :root:not([data-theme]) .about__logo--dark {
+    display: block;
+  }
+}
+
 .about__lead {
   font: var(--text-body);
 }

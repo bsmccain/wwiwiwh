@@ -1,8 +1,11 @@
-<img src="assets/icon.svg" width="64" height="64" alt="">
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
+    <img src="assets/banner-light.png" width="724" alt="wwiwiwh: Where Was I When I Was Here?">
+  </picture>
+</h1>
 
-# wwiwiwh
-
-**Where Was I When I Was Here.** Lay the street map of a place you know over a place you don't, at the same scale.
+Lay the street map of a place you know over a place you don't, at the same scale.
 
 If you grew up somewhere, you carry its distances around with you. wwiwiwh draws that place, called Home, as red line-work on top of another place, called Away. Palo Alto to downtown San Jose is 16.7 miles. Put San Jose on central London and Palo Alto lands a few miles short of Watford.
 

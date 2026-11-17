@@ -11,7 +11,14 @@
     <!-- The browser's own chrome continues the sheet. Keep in step with src/app/theme.ts. -->
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f7f4" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1c2e" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- The icon follows the system's light or dark setting; favicon.ico is for browsers that ignore media. -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32-light.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32-dark.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192-light.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192-dark.png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin />
     <script src="/theme.js"></script>
   </head>
