@@ -7,6 +7,8 @@
 
 Lay the street map of a place you know over a place you don't, at the same scale.
 
+**Open it at [wwiwiwh.com](https://wwiwiwh.com).** It runs in the browser. There is nothing to install and no account.
+
 If you grew up somewhere, you carry its distances around with you. wwiwiwh draws that place, called Home, as red line-work on top of another place, called Away. Palo Alto to downtown San Jose is 16.7 miles. Put San Jose on central London and Palo Alto lands a few miles short of Watford.
 
 ![San Jose's streets in red over London in blue](assets/screenshot.jpg)
@@ -55,80 +57,56 @@ Measure gives straight lines. Drive gives distances by road and times for a car 
 
 The single-letter keys can be switched off under More.
 
-## Running it
+## How accurate it is
 
-Needs Node 22 or newer.
+A flat web map draws places far from the equator bigger than they are. London is drawn about 28% larger than San Jose at the same zoom. wwiwiwh undoes that, so a mile on Home is a mile on Away.
 
-```sh
-npm install
-npm run dev            # http://127.0.0.1:5173
-npm test               # unit tests
-npm run test:e2e       # browser tests against a production build
-npm run test:e2e:live  # one smoke test against the real tile service
-npm run build          # static site in dist/
-npm run inks           # rewrite src/styles/ink-sets.css after changing a colour in src/app/theme.ts
-```
+The match is exact at the pin and stays within about 1% across a city-sized view. It gets looser far from the pin, or zoomed out to a whole country, and the caption tells you when that happens. Between two very different latitudes the match at the pin can still be off by up to about half a percent, because the maths treats the Earth as a perfect sphere.
 
-`dist/` is a plain static site with no server side. It works from a sub-path, so any static host will do.
+Drive times assume a car and no traffic.
 
-Publishing a GitHub release from `main` deploys it to Cloudflare Pages ([wwiwiwh.pages.dev](https://wwiwiwh.pages.dev)) through `.github/workflows/deploy.yml`, after the unit tests and build pass. Pushes and pull requests don't deploy. Running the workflow by hand redeploys the latest `main`.
+## What leaves your browser
 
-The browser tests answer tile and search requests from local fixtures, so they run offline. They use Playwright's Chromium, which `npx playwright install chromium` fetches.
+- Addresses you search for go to [Photon](https://photon.komoot.io), komoot's place search, to be looked up.
+- The two ends of a drive, and the spot its start lands on in the other place, go to a public [Valhalla](https://valhalla.github.io/valhalla/) routing server run by [FOSSGIS](https://www.fossgis.de/) for OpenStreetMap.
+- Map tiles come from [OpenFreeMap](https://openfreemap.org), which sees which parts of the world you look at.
+- Recent places and spots, and your settings, are kept in your browser. Nothing is stored on a wwiwiwh server. The page has no accounts and no analytics. Cloudflare, which hosts the site, sees requests the way any web host does.
 
-## How the scale matching works
+A link you copy carries the pin's position, any drive, and any names you gave their spots. A link made with your home address pinned contains that address, so check before you post one.
 
-Both maps are Web Mercator, which stretches the ground by 1 / cos(latitude). London at 51.5° north is drawn about 28% larger than San Jose at 37.3° for the same zoom level. wwiwiwh cancels that by running Home at a different zoom, offset by log2 of the ratio of the two cosines at the pin.
-
-The two maps are tied by one similarity transform in Mercator space. `src/geo/registration.ts` holds it. Because it is a single rigid transform, the maps cannot drift against each other while you pan. The match is tightest at the pin and stays within about 1% across a metro-sized view. Far from the pin, or zoomed out to a whole country, the two projections stretch differently and the caption says so.
-
-The maths treats the Earth as a sphere. On the real, slightly flattened Earth the match at the pin can be off by up to about half a percent between very different latitudes.
-
-## Where things are
-
-```
-src/geo/          Mercator, the registration transform, distances, units
-src/map/          the locked pair of MapLibre maps, gestures, both map styles
-src/labels/       place names for both maps, with one collision pass between them
-src/instruments/  pin, turn knob, rings, trip line, a drive's ends and rings, bar scale
-src/search/       place picker, Photon search, presets
-src/routing/      driving routes and reach outlines from Valhalla
-src/app/          state, actions, address-bar syncing, the caption sentences
-src/ui/           the bottom strip, caption, menus, dialogs, keyboard
-src/data/         171 metro presets and a familiar trip for 14 of them
-tests/            Playwright tests
-```
-
-Place names are DOM elements on one layer above both maps, not MapLibre labels. That is what lets a Home name and an Away name avoid each other, and keeps Away's names readable on top of Home's lines.
-
-## Data and services
-
-- Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
-- Vector tiles from [OpenFreeMap](https://openfreemap.org), in the OpenMapTiles schema. No API key.
-- Place search by [Photon](https://photon.komoot.io) from komoot. No API key.
-- Driving routes and reach outlines by [Valhalla](https://valhalla.github.io/valhalla/), on the server [FOSSGIS](https://www.fossgis.de/) runs for OpenStreetMap. No API key.
-- Maps drawn with [MapLibre GL JS](https://maplibre.org).
-- Typefaces Barlow and Barlow Semi Condensed, under the SIL Open Font License.
-
-OpenFreeMap, Photon and the FOSSGIS routing server are free public services with no uptime promise and a fair-use expectation. If tiles fail to load, wwiwiwh says so and retries on its own. The routing server allows one request a second and is not meant for busy sites, so wwiwiwh asks it one thing at a time, remembers its answers, and after a failure waits for you to press "Try again". A copy of wwiwiwh with many visitors should run its own Valhalla.
-
-Addresses you search for are sent to Photon to be looked up. The two ends of a drive, and the spot its start lands on in the other place, are sent to the routing server. A link you copy carries the pin's position, any drive, and any names you gave their spots, so a link made with your home address pinned contains that address.
+All three services are free and public, with no uptime promise. If tiles fail to load, wwiwiwh says so and keeps retrying. The routing server allows one request a second, so wwiwiwh asks it one thing at a time and remembers the answers. If a drive fails, wait a moment and press "Try again".
 
 ## Known limits
 
-- Tested mostly in headless Chromium, with spot checks in Firefox and WebKit. No real phone, Mac or screen reader has been tried.
+- Tested mostly in Chromium, with spot checks in Firefox and WebKit, Safari's engine. It hasn't been tried on a real phone, a Mac or with a screen reader yet.
 - On a phone, a pin or line end that was just set pans the map when you drag it, until you touch the map somewhere else.
 - Address search waits for three characters, so a two-character name finds nothing.
-- A line end that sits exactly under the pin cannot be grabbed with a pointer. Drag the other end, or draw the line again with Measure.
-- A drive's ends cannot be dragged. Set the drive again with Drive.
-- The shaded reach is only worked out for drives of up to 60 minutes (by time) or 100 km (by distance), and no drive longer than 1,500 km is worked out at all. Those are the routing server's limits.
+- A line end that sits exactly under the pin can't be grabbed with a pointer. Drag the other end, or draw the line again with Measure.
+- A drive's ends can't be dragged. Set the drive again with Drive.
+- The shaded reach only covers drives of up to 60 minutes (by time) or 100 km (by distance), and a drive longer than 1,500 km isn't worked out at all. Those are the routing server's limits.
 - Subway and tram lines are missing below street zoom, because the tiles only carry them at zoom 14.
 - A place name can sit on top of a route-number shield.
 
-## License
+## Problems and ideas
 
-MIT. See [LICENSE](LICENSE).
+Report a bug or suggest a change in [Issues](https://github.com/bsmccain/wwiwiwh/issues). Say which browser and device you used, and leave real addresses out of screenshots and links. Security and privacy problems go through [SECURITY.md](SECURITY.md) instead.
 
 This is a personal project. Issues and pull requests are welcome, but they may not get a response.
+
+## Running your own copy
+
+wwiwiwh is a static site, so any static host can serve it. [SELF-HOSTING.md](SELF-HOSTING.md) covers building it, deploying it, which outside services it depends on and how to swap them, and how the code is laid out. [CONTRIBUTING.md](CONTRIBUTING.md) covers sending changes back.
+
+## Credits and license
+
+- Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+- Vector tiles from [OpenFreeMap](https://openfreemap.org), in the [OpenMapTiles](https://openmaptiles.org) schema.
+- Place search by [Photon](https://photon.komoot.io) from komoot.
+- Driving routes and reach outlines by [Valhalla](https://valhalla.github.io/valhalla/), on the [FOSSGIS](https://www.fossgis.de/) server.
+- Maps drawn with [MapLibre GL JS](https://maplibre.org).
+- Typefaces Barlow and Barlow Semi Condensed, under the SIL Open Font License.
+
+The code is MIT licensed. See [LICENSE](LICENSE).
 
 ---
 
