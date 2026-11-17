@@ -173,6 +173,33 @@
 
 /* --- about --- */
 
+/* The app's mark, in the printing for the theme. It is drawn on a clear ground, so it sits on any ink set's sheet. */
+.about__logo {
+  display: block;
+  inline-size: 64px;
+  block-size: 64px;
+  margin-block-end: var(--space-3);
+}
+
+.about__logo--dark,
+:root[data-theme='dark'] .about__logo--light {
+  display: none;
+}
+
+:root[data-theme='dark'] .about__logo--dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .about__logo--light {
+    display: none;
+  }
+
+  :root:not([data-theme]) .about__logo--dark {
+    display: block;
+  }
+}
+
 .about__lead {
   font: var(--text-body);
 }

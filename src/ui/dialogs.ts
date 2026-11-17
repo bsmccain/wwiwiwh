@@ -1,5 +1,7 @@
 import './dialogs.css';
 import { button, el, externalLink, setText, uniqueId } from './dom';
+import logoDark from './brand/icon-128-dark.png';
+import logoLight from './brand/icon-128-light.png';
 import { icon } from './icons';
 import type { Overlays } from './overlays';
 import { KEYS_THAT_STAY, SHORTCUT_GROUPS } from './shortcuts';
@@ -107,6 +109,9 @@ export function createAboutDialog(deps: { overlays: Overlays }): SheetDialog {
     title: 'About wwiwiwh',
     overlays: deps.overlays,
     body: [
+      // Decorative: the dialog's title already names the app. Both printings are present; the style sheet shows the one for the theme.
+      el('img', 'about__logo about__logo--light', { src: logoLight, alt: '', width: '64', height: '64' }),
+      el('img', 'about__logo about__logo--dark', { src: logoDark, alt: '', width: '64', height: '64' }),
       paragraph('about__lead', [
         'wwiwiwh (Where Was I When I Was Here) lays the street map of a place you know over a place you are curious about. Both are drawn at the same size, so your feel for distances at home carries over.',
       ]),
