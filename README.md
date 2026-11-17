@@ -71,6 +71,8 @@ npm run inks           # rewrite src/styles/ink-sets.css after changing a colour
 
 `dist/` is a plain static site with no server side. It works from a sub-path, so any static host will do.
 
+Publishing a GitHub release from `main` deploys it to Cloudflare Pages ([wwiwiwh.pages.dev](https://wwiwiwh.pages.dev)) through `.github/workflows/deploy.yml`, after the unit tests and build pass. Pushes and pull requests don't deploy. Running the workflow by hand redeploys the latest `main`.
+
 The browser tests answer tile and search requests from local fixtures, so they run offline. They use Playwright's Chromium, which `npx playwright install chromium` fetches.
 
 ## How the scale matching works
