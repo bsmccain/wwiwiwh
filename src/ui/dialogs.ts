@@ -100,6 +100,8 @@ export function createShortcutsDialog(deps: { overlays: Overlays; singleKeysOn: 
   });
 }
 
+const REPO = 'https://github.com/bsmccain/wwiwiwh';
+
 export function createAboutDialog(deps: { overlays: Overlays }): SheetDialog {
   const paragraph = (className: string, children: readonly (Node | string)[]): HTMLElement => el('p', className, {}, children);
   const credit = (children: readonly (Node | string)[]): HTMLElement => el('li', '', {}, children);
@@ -123,6 +125,16 @@ export function createAboutDialog(deps: { overlays: Overlays }): SheetDialog {
       ]),
       paragraph('about__lead', [
         "The places and spots you pick, with their exact positions, are kept in this browser so the pickers can offer them again, and anyone using this browser can see them. Under More, Recent places and spots clears them or stops keeping them. That cannot take back a link already shared, or clear the browser's own history.",
+      ]),
+      el('h3', 'about__heading', {}, ['Source code']),
+      el('ul', 'about__credits', {}, [
+        credit([
+          'wwiwiwh is open source, under the MIT License. Its code is on ',
+          externalLink(REPO, 'GitHub'),
+          '.',
+        ]),
+        credit(['Found a bug or have an idea? ', externalLink(`${REPO}/issues`, 'Open an issue'), '.']),
+        credit(["See what's changed in the ", externalLink(`${REPO}/releases`, 'release notes'), '.']),
       ]),
       el('h3', 'about__heading', {}, ['Credits and licences']),
       el('ul', 'about__credits', {}, [

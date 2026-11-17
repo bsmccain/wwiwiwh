@@ -13,6 +13,9 @@ test.describe('About wwiwiwh', () => {
     await expect(about).toBeVisible();
     await expect(about.getByRole('link', { name: /OpenStreetMap/ })).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright');
     await expect(about.getByRole('link', { name: /OpenFreeMap/ })).toHaveAttribute('href', 'https://openfreemap.org');
+    await expect(about.getByRole('link', { name: /^GitHub/ })).toHaveAttribute('href', 'https://github.com/bsmccain/wwiwiwh');
+    await expect(about.getByRole('link', { name: /^Open an issue/ })).toHaveAttribute('href', 'https://github.com/bsmccain/wwiwiwh/issues');
+    await expect(about.getByRole('link', { name: /^release notes/ })).toHaveAttribute('href', 'https://github.com/bsmccain/wwiwiwh/releases');
     await expect(about).toContainText('Both maps are drawn at the same ground scale');
   });
 
